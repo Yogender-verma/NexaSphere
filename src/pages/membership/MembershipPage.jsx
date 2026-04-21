@@ -219,18 +219,19 @@ export default function MembershipPage({ onBack }) {
 
   const [form, setForm] = useState({
     // Section 1
-    fullName:    '',
-    rollNumber:  '',
-    course:      '',
-    courseOther: '',
-    branch:      '',
-    branchOther: '',
-    section:     '',
-    semester:    '',
-    whatsapp:    '',
+    fullName:     '',
+    collegeEmail: '',
+    rollNumber:   '',
+    course:       '',
+    courseOther:  '',
+    branch:       '',
+    branchOther:  '',
+    section:      '',
+    semester:     '',
+    whatsapp:     '',
     // Section 2
-    groups:      [],
-    whyJoin:     '',
+    groups:       [],
+    whyJoin:      '',
   });
 
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
@@ -238,19 +239,24 @@ export default function MembershipPage({ onBack }) {
   // ── Validation per step ──────────────────────────────────────────────────
   const missingRequired = useMemo(() => {
     const missing = [];
-    if (step === 0) {
-      if (!form.fullName.trim())   missing.push('fullName');
-      if (!form.rollNumber.trim()) missing.push('rollNumber');
-      if (!form.course)            missing.push('course');
+    // Step 0 = About (no required fields — just read)
+    if (step === 1) {
+      if (!form.fullName.trim())     missing.push('fullName');
+      if (!form.collegeEmail.trim()) missing.push('collegeEmail');
+      if (!form.rollNumber.trim())   missing.push('rollNumber');
+      if (!form.course)              missing.push('course');
       if (form.course === 'Other' && !form.courseOther.trim()) missing.push('courseOther');
-      if (!form.branch)            missing.push('branch');
+      if (!form.branch)              missing.push('branch');
       if (form.branch === 'Other' && !form.branchOther.trim()) missing.push('branchOther');
-      if (!form.section)           missing.push('section');
-      if (!form.semester)          missing.push('semester');
+      if (!form.section)             missing.push('section');
+      if (!form.semester)            missing.push('semester');
       const phone = String(form.whatsapp || '').trim();
       if (!phone || !/^\d{10}$/.test(phone)) missing.push('whatsapp');
+      // Basic email format check (no domain restriction)
+      const email = form.collegeEmail.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) missing.push('collegeEmail');
     }
-    if (step === 1) {
+    if (step === 2) {
       if (form.groups.length === 0) missing.push('groups');
       if (!form.whyJoin.trim())     missing.push('whyJoin');
     }
@@ -279,19 +285,19 @@ export default function MembershipPage({ onBack }) {
       } catch { /* ignore */ }
 
       const payload = {
-        fullName:    form.fullName.trim(),
-        rollNumber:  form.rollNumber.trim(),
-        course:      form.course === 'Other' ? (form.courseOther.trim() || 'Other') : form.course,
-        branch:      form.branch === 'Other' ? (form.branchOther.trim() || 'Other') : form.branch,
-        section:     form.section,
-        semester:    form.semester,
-        whatsapp:    form.whatsapp,
-        groups:      form.groups.join(', '),
-        whyJoin:     form.whyJoin.trim(),
-        submittedAt: new Date().toISOString(),
-        userAgent:   navigator.userAgent,
-        // tells the Apps Script which handler to use
-        formType:    'membership',
+        fullName:     form.fullName.trim(),
+        collegeEmail: form.collegeEmail.trim().toLowerCase(),
+        rollNumber:   form.rollNumber.trim(),
+        course:       form.course === 'Other' ? (form.courseOther.trim() || 'Other') : form.course,
+        branch:       form.branch === 'Other' ? (form.branchOther.trim() || 'Other') : form.branch,
+        section:      form.section,
+        semester:     form.semester,
+        whatsapp:     form.whatsapp,
+        groups:       form.groups.join(', '),
+        whyJoin:      form.whyJoin.trim(),
+        submittedAt:  new Date().toISOString(),
+        userAgent:    navigator.userAgent,
+        formType:     'membership',
       };
 
       const gasUrl = import.meta?.env?.VITE_MEMBERSHIP_SCRIPT_URL || MEMBERSHIP_SCRIPT_URL;
@@ -336,40 +342,142 @@ export default function MembershipPage({ onBack }) {
 
   // ── Step content ─────────────────────────────────────────────────────────
   const steps = useMemo(() => [
+    // ── Step 0: About NexaSphere ──────────────────────────────────────────
+    {
+      title:    'About NexaSphere',
+      subtitle: 'NexaSphere Membership Form — GL Bajaj Group of Institutions',
+      icon:     <IconBolt style={{ width: 18, height: 18 }} />,
+      render: () => (
+        <div style={{ display: 'grid', gap: 18 }}>
+          {/* One-time warning */}
+          <div style={{
+            background: 'rgba(255,180,0,.08)',
+            border: '1px solid rgba(255,180,0,.32)',
+            borderRadius: 'var(--r3)',
+            padding: '14px 18px',
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+          }}>
+            <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>⚠️</span>
+            <div style={{ lineHeight: 1.75 }}>
+              <div style={{ fontFamily: 'Orbitron,monospace', fontSize: '.75rem', letterSpacing: '.1em', color: 'var(--t1)', marginBottom: 6, textTransform: 'uppercase' }}>
+                Important — Read Before Proceeding
+              </div>
+              <div style={{ fontSize: '.9rem', color: 'var(--t2)' }}>
+                This form can be filled <b style={{ color: 'var(--t1)' }}>only once</b> per device.
+                Please <b style={{ color: 'var(--t1)' }}>read all questions carefully</b> and
+                <b style={{ color: 'var(--t1)' }}> verify your details</b> before submitting.
+                Once submitted, you will not be able to edit your response.
+              </div>
+            </div>
+          </div>
+
+          {/* What is NexaSphere */}
+          <p style={{ color: 'var(--t2)', lineHeight: 1.8, fontSize: '.96rem' }}>
+            <span className="grad-text" style={{ fontWeight: 700 }}>NexaSphere</span> is the official
+            student tech ecosystem at <b style={{ color: 'var(--t1)' }}>GL Bajaj Group of Institutions, Mathura</b>.
+            We bring together students from all branches and years under one platform — organising and
+            supporting <b>tech and non-tech events</b> across every domain:
+          </p>
+
+          {/* Domain grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+            gap: 10,
+          }}>
+            {[
+              { icon: '🔐', label: 'Cybersecurity' },
+              { icon: '🤖', label: 'AI / Machine Learning' },
+              { icon: '🌐', label: 'Web Development' },
+              { icon: '☁️', label: 'Cloud & AWS' },
+              { icon: '📱', label: 'Android Development' },
+              { icon: '📢', label: 'Management & Events' },
+              { icon: '💼', label: 'Career & Placement' },
+              { icon: '🎨', label: 'Design & Media' },
+            ].map(d => (
+              <div key={d.label} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: 'var(--card)',
+                border: '1px solid var(--bdr)',
+                borderRadius: 'var(--r2)',
+                padding: '10px 14px',
+              }}>
+                <span style={{ fontSize: '1.2rem' }}>{d.icon}</span>
+                <span style={{ fontSize: '.88rem', color: 'var(--t2)', fontFamily: 'Rajdhani,sans-serif', fontWeight: 600 }}>{d.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* What you get */}
+          <div style={{
+            background: 'var(--card)',
+            border: '1px solid var(--bdr)',
+            borderRadius: 'var(--r3)',
+            padding: 18,
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            <div className="corner-tl"/><div className="corner-br"/>
+            <div style={{
+              fontFamily: 'Space Mono,monospace', fontSize: '.65rem',
+              color: 'var(--t3)', letterSpacing: '.22em',
+              textTransform: 'uppercase', marginBottom: 10,
+            }}>As a NexaSphere Member you get</div>
+            <ul style={{ paddingLeft: 18, display: 'grid', gap: 8, color: 'var(--t2)', fontSize: '.92rem' }}>
+              <li>Access to <b>exclusive WhatsApp domain groups</b> for learning & collaboration</li>
+              <li>Early access to <b>workshops, hackathons, and events</b></li>
+              <li>Network with peers and Core Team across all domains</li>
+              <li><b>Certificates</b> for events you participate in</li>
+              <li>Career, placement, and industry insights from our sessions</li>
+            </ul>
+          </div>
+
+          {/* LinkedIn nudge */}
+          <div style={{
+            background: 'linear-gradient(135deg,rgba(0,119,181,.10),rgba(0,212,255,.05))',
+            border: '1px solid rgba(0,119,181,.24)',
+            borderRadius: 'var(--r2)',
+            padding: '12px 16px',
+            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: '1.1rem' }}>🔗</span>
+            <span style={{ fontSize: '.88rem', color: 'var(--t2)', flex: 1 }}>
+              Before filling the form, please follow our official LinkedIn page:
+            </span>
+            <a
+              href={LINKEDIN_PAGE}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline btn-sm"
+              style={{ textTransform: 'none', letterSpacing: 0, fontSize: '.82rem' }}
+            >Follow on LinkedIn</a>
+          </div>
+        </div>
+      ),
+    },
+    // ── Step 1: Personal Details ──────────────────────────────────────────
     {
       title:    'Personal Details',
       subtitle: 'Fill in your basic information accurately using your college details.',
       icon:     <IconUsers style={{ width: 18, height: 18 }} />,
       render: () => (
         <div style={{ display: 'grid', gap: 18 }}>
-          {/* LinkedIn notice */}
-          <div style={{
-            background: 'linear-gradient(135deg,rgba(0,119,181,.12),rgba(0,212,255,.06))',
-            border: '1px solid rgba(0,119,181,.28)',
-            borderRadius: 'var(--r3)',
-            padding: '14px 16px',
-            display: 'flex', alignItems: 'flex-start', gap: 12,
-          }}>
-            <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>🔗</span>
-            <div style={{ fontSize: '.88rem', color: 'var(--t2)', lineHeight: 1.7 }}>
-              Before submitting, please follow our official LinkedIn page:{' '}
-              <a
-                href={LINKEDIN_PAGE}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: 'var(--c1)', fontWeight: 600, wordBreak: 'break-all' }}
-              >
-                {LINKEDIN_PAGE}
-              </a>
-            </div>
-          </div>
-
           <Field label="Full Name" required>
             <Input
               value={form.fullName}
               onChange={v => set('fullName', v.replace(/[^a-zA-Z\s.\-']/g, ''))}
               placeholder="Your full name"
               maxLength={60}
+            />
+          </Field>
+
+          <Field label="College Email ID" required hint="Use your official college email">
+            <Input
+              value={form.collegeEmail}
+              onChange={v => set('collegeEmail', v.trim().toLowerCase())}
+              placeholder="yourname@glbajajgroup.org"
+              type="email"
+              maxLength={100}
             />
           </Field>
 
@@ -448,6 +556,7 @@ export default function MembershipPage({ onBack }) {
         </div>
       ),
     },
+    // ── Step 2: Domain Selection ──────────────────────────────────────────
     {
       title:    'Domain Selection',
       subtitle: 'Choose the NexaSphere groups you want to join and share your motivation.',

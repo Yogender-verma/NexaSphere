@@ -39,6 +39,7 @@ var SHEET_TAB_NAME = 'Membership'; // Tab name inside the sheet
 var HEADER_ROW = [
   'Timestamp',
   'Full Name',
+  'College Email',
   'University Roll Number',
   'Course',
   'Branch',
@@ -116,6 +117,7 @@ function doPost(e) {
     var row = [
       now,                                                              // Timestamp (server)
       data.fullName    || '',                                           // Full Name
+      data.collegeEmail|| '',                                           // College Email
       data.rollNumber  || '',                                           // University Roll Number
       data.course      || '',                                           // Course
       data.branch      || '',                                           // Branch

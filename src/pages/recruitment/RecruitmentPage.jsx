@@ -431,6 +431,31 @@ export default function RecruitmentPage({ onBack }) {
       requiredKeys: [],
       render: () => (
         <div style={{ display: 'grid', gap: 18 }}>
+          {/* One-time fill warning */}
+          <div style={{
+            background: 'rgba(255,180,0,.08)',
+            border: '1px solid rgba(255,180,0,.32)',
+            borderRadius: 'var(--r3)',
+            padding: '14px 18px',
+            display: 'flex', alignItems: 'flex-start', gap: 12,
+          }}>
+            <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>⚠️</span>
+            <div style={{ lineHeight: 1.75 }}>
+              <div style={{
+                fontFamily: 'Orbitron,monospace', fontSize: '.75rem',
+                letterSpacing: '.1em', color: 'var(--t1)', marginBottom: 6, textTransform: 'uppercase',
+              }}>
+                Important — Read Before Proceeding
+              </div>
+              <div style={{ fontSize: '.9rem', color: 'var(--t2)' }}>
+                This application form can be filled <b style={{ color: 'var(--t1)' }}>only once</b> per device.
+                Please <b style={{ color: 'var(--t1)' }}>read every question carefully</b> and{' '}
+                <b style={{ color: 'var(--t1)' }}>verify all your details</b> before submitting.
+                Once submitted, you will not be able to edit your response.
+              </div>
+            </div>
+          </div>
+
           <p style={{ color: 'var(--t2)' }}>
             We are building the Core Team for <span className="grad-text" style={{ fontWeight: 700 }}>NexaSphere</span> — the central tech community
             that brings together GDG On Campus activities, cloud programs, workshops, hackathons, and multi-domain learning on campus.
