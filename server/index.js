@@ -193,20 +193,36 @@ async function listEventsStore() {
 
 async function createEventStore(event) {
   if (HAS_SUPABASE) {
-    const [row] = await supabaseRequest('events', {
-      method: 'POST',
-      body: [{
-        id: event.id,
-        name: event.name,
-        short_name: event.shortName,
-        date_text: event.date,
-        description: event.description,
-        status: event.status,
-        icon: event.icon,
-        tags: event.tags,
-      }],
-    });
-    return row;
+    let payload = {
+      id: event.id,
+      name: event.name,
+      short_name: event.shortName,
+      date_text: event.date,
+      description: event.description,
+      status: event.status,
+      icon: event.icon,
+      tags: event.tags,
+    };
+    let row;
+    try {
+      [row] = await supabaseRequest('events', { method: 'POST', body: [payload] });
+    } catch (e) {
+      // Retry with suffix if id collision occurs.
+      payload = { ...payload, id: `${event.id}-${Date.now()}` };
+      [row] = await supabaseRequest('events', { method: 'POST', body: [payload] });
+    }
+    return {
+      id: row.id,
+      name: row.name,
+      shortName: row.short_name || row.name,
+      date: row.date_text,
+      description: row.description,
+      status: row.status,
+      icon: row.icon || '📌',
+      tags: Array.isArray(row.tags) ? row.tags : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
   }
   const content = await readContent();
   content.events.unshift({ ...event, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
@@ -229,7 +245,19 @@ async function updateEventStore(id, patch) {
         updated_at: new Date().toISOString(),
       },
     });
-    return row;
+    if (!row) return null;
+    return {
+      id: row.id,
+      name: row.name,
+      shortName: row.short_name || row.name,
+      date: row.date_text,
+      description: row.description,
+      status: row.status,
+      icon: row.icon || '📌',
+      tags: Array.isArray(row.tags) ? row.tags : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
   }
   const content = await readContent();
   const idx = content.events.findIndex(e => e.id === id);
@@ -286,7 +314,15 @@ async function createActivityEventStore(activityKey, event) {
         created_by_phone: event.createdBy?.phone || '',
       }],
     });
-    return row;
+    return {
+      id: row.id,
+      name: row.name,
+      date: row.date_text,
+      tagline: row.tagline,
+      description: row.description,
+      status: row.status || 'completed',
+      createdAt: row.created_at,
+    };
   }
   const content = await readContent();
   content.activityEvents = content.activityEvents || {};
