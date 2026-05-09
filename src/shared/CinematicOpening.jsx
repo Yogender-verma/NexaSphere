@@ -142,22 +142,17 @@ export default function CinematicOpening({ onDone, theme = 'dark' }) {
   const WORD = 'NEXASPHERE';
   const isL  = theme === 'light';
 
-  const PHASE_1_DELAY = 150;
-  const PHASE_2_DELAY = 350;
-  const TYPEWRITER_INTERVAL = 50;
-  const TAGLINE_DELAY = 900;
-  const CRACKING_DELAY = 1400;
-  const SHATTER_DELAY = 1500;
-  const COMPLETION_DELAY = 2200;
+  const PHASE_1_DELAY = 100;
+  const PHASE_2_DELAY = 300;
+  const TYPEWRITER_INTERVAL = 40;
+  const TAGLINE_DELAY = 700;
+  const CRACKING_DELAY = 1000;
+  const SHATTER_DELAY = 1100;
+  const COMPLETION_DELAY = 1600;
 
   useEffect(() => {
-    // Ensure the intro always finishes even if something goes wrong
-    const safetyTimeout = setTimeout(() => {
-      if (!gone) {
-        setGone(true);
-        onDone();
-      }
-    }, COMPLETION_DELAY + 1000);
+    // Safety auto-skip
+    const safety = setTimeout(() => { if(!gone){ setGone(true); onDone(); } }, 2500);
 
     const ts = [];
     ts.push(setTimeout(() => setPhase(1), PHASE_1_DELAY));

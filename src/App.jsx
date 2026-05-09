@@ -85,19 +85,18 @@ export default function App() {
 
   return (
     <>
-      <Chatbot />
-      <Navbar activeTab={activeTab} onTabChange={handleTabChange} onToggleTheme={toggleTheme} theme={theme} />
-
       {!cinDone && <CinematicOpening theme={theme} onDone={() => setCinDone(true)} />}
       
       {cinDone && (
         <>
+          <Chatbot />
           <ScrollProgress />
           <Cursor />
           <Wipe on={wipeOn} ph={wipePh} />
           <AmbientOrbs theme={theme} />
           <GeometricGridBackground theme={theme} />
           <ParticleBackground theme={theme} />
+          <Navbar activeTab={activeTab} onTabChange={handleTabChange} onToggleTheme={toggleTheme} theme={theme} />
         </>
       )}
 
