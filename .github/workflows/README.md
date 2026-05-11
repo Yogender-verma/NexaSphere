@@ -20,3 +20,12 @@ Automatic CI/CD pipeline — runs on every push to the `main` branch.
 ### If a deploy fails:
 Go to the **Actions** tab on GitHub — click the failed workflow — read the red step for the exact error.
 Most common cause: syntax error in JSX or a missing import.
+
+## auto-add-nsoc26-label.yml
+
+Automatically adds the `NSOC'26` label to every newly opened issue.
+
+### What it does:
+1. Runs when an issue is opened
+2. Ensures the `NSOC'26` label exists in the repository
+3. Applies the label to the new issue
