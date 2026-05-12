@@ -32,7 +32,8 @@ model = genai.GenerativeModel(
 )
 
 app = FastAPI(title="NexaSphere AI Core")
-
+from routers import forms
+app.include_router(forms.router)
 # 3. CORS Configuration
 app.add_middleware(
     CORSMiddleware,

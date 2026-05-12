@@ -12,8 +12,8 @@ const getDb = (key, defaultVal) => {
     // Seed initial data if empty
     if (key === 'events') {
       const initialEvents = [
-        { id: '1', name: 'KSS #153 — Knowledge Sharing Session', shortName: 'KSS #153', date: 'March 14, 2025', description: "NexaSphere's inaugural Knowledge Sharing Session.", status: 'completed', icon: '🧠', tags: ['AI', 'Learning'] },
-        { id: '2', name: 'Workshop: Git & GitHub', shortName: 'Git & GitHub', date: 'April 24', description: 'Version control mastery for every developer.', status: 'upcoming', icon: '🔧', tags: ['Git', 'GitHub'] }
+        { id: '1', name: 'KSS #153 — Knowledge Sharing Session', shortName: 'KSS #153', date: 'March 14, 2025', description: "NexaSphere's inaugural Knowledge Sharing Session.", status: 'completed', icon: 'Brain', tags: ['AI', 'Learning'] },
+        { id: '2', name: 'Workshop: Git & GitHub', shortName: 'Git & GitHub', date: 'April 24', description: 'Version control mastery for every developer.', status: 'upcoming', icon: 'Wrench', tags: ['Git', 'GitHub'] }
       ];
       setDb(key, initialEvents);
       return initialEvents;
@@ -175,24 +175,12 @@ export const api = {
   },
 
   coreTeam: {
-    getAll: async () => {
-      const result = await fetchWithAuth('/api/admin/core-team');
-      if (Array.isArray(result)) return result;
-      if (Array.isArray(result?.members)) return result.members;
-      return [];
-    },
+    getAll: () => fetchWithAuth('/api/admin/core-team'),
     add: async (member) => {
       const result = await fetchWithAuth('/api/admin/core-team', { method: 'POST', body: JSON.stringify(member) });
-      const created = result?.member || result;
-      eventEmitter.emit(EVENTS.CORE_TEAM_MEMBER_ADDED, created);
+      eventEmitter.emit(EVENTS.CORE_TEAM_MEMBER_ADDED, result);
       eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Member added' });
-      return created;
-    },
-    update: async (id, member) => {
-      const result = await fetchWithAuth(`/api/admin/core-team/${id}`, { method: 'PATCH', body: JSON.stringify(member) });
-      const updated = result?.member || result;
-      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Member updated' });
-      return updated;
+      return result;
     },
     remove: async (id) => {
       await fetchWithAuth(`/api/admin/core-team/${id}`, { method: 'DELETE' });

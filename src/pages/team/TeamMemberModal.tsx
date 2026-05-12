@@ -1,8 +1,5 @@
-import { type MouseEvent, type ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import * as LucideIcons from 'lucide-react';
-import type { CoreTeamMember } from '../../types/api';
-import type { TeamMemberModalProps } from '../../types/components';
 
 function DynamicIcon({ name, ...props }: { name: keyof typeof LucideIcons; [key: string]: unknown }): ReactNode {
   const Icon = (LucideIcons as Record<string, React.ComponentType<Record<string, unknown>>>)[name] ?? LucideIcons.HelpCircle;
@@ -12,7 +9,7 @@ function DynamicIcon({ name, ...props }: { name: keyof typeof LucideIcons; [key:
 function CopyPopup({ value, onClose }: { value: string; onClose: () => void }): ReactNode {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = (): void => {
+  const handleCopy = () => {
     navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
@@ -33,9 +30,8 @@ function CopyPopup({ value, onClose }: { value: string; onClose: () => void }): 
   return (
     <div className="copy-popup">
       <span className="copy-popup-value">{value}</span>
-      <button className="copy-popup-btn" onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <DynamicIcon name={copied ? 'Check' : 'Copy'} size={14} />
-        {copied ? 'Copied!' : 'Copy'}
+      <button className="copy-popup-btn" onClick={handleCopy}>
+        {copied ? '✅ Copied!' : '📋 Copy'}
       </button>
     </div>
   );
@@ -93,30 +89,22 @@ function ModalContent({ member, onClose }: { member: CoreTeamMember; onClose: ()
 
         <div className="modal-info" style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="modal-info-row">
-            <span className="modal-info-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <DynamicIcon name="GraduationCap" size={14} /> Year
-            </span>
+            <span className="modal-info-label">🎓 Year</span>
             <span className="modal-info-value">{member.year}</span>
           </div>
           <div className="modal-info-row">
-            <span className="modal-info-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <DynamicIcon name="Briefcase" size={14} /> Branch
-            </span>
+            <span className="modal-info-label">🔬 Branch</span>
             <span className="modal-info-value">{member.branch}</span>
           </div>
           <div className="modal-info-row">
-            <span className="modal-info-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <DynamicIcon name="Layout" size={14} /> Section
-            </span>
+            <span className="modal-info-label">📋 Section</span>
             <span className="modal-info-value">{member.section}</span>
           </div>
         </div>
 
         {member.achievements && member.achievements.length > 0 && (
           <div className="modal-achievements">
-            <div className="modal-achievements-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <DynamicIcon name="Trophy" size={16} /> Achievements
-            </div>
+            <div className="modal-achievements-title">🏆 Achievements</div>
             <ul className="modal-achievements-list">
               {member.achievements.map((achievement, index) => (
                 <li key={index} className="modal-achievement-item">{achievement}</li>
@@ -127,9 +115,7 @@ function ModalContent({ member, onClose }: { member: CoreTeamMember; onClose: ()
 
         {member.testimonials && member.testimonials.length > 0 && (
           <div className="modal-testimonials">
-            <div className="modal-testimonials-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <DynamicIcon name="MessageCircle" size={16} /> Testimonials
-            </div>
+            <div className="modal-testimonials-title">💬 Testimonials</div>
             <ul className="modal-testimonials-list">
               {member.testimonials.map((testimonial, index) => (
                 <li key={index} className="modal-testimonial-item">
@@ -149,9 +135,8 @@ function ModalContent({ member, onClose }: { member: CoreTeamMember; onClose: ()
                 target="_blank"
                 rel="noopener noreferrer"
                 className="modal-social-btn btn-linkedin"
-                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <DynamicIcon name="ExternalLink" size={14} /> LINKEDIN
+                🔗 LinkedIn
               </a>
             )}
 
@@ -163,14 +148,24 @@ function ModalContent({ member, onClose }: { member: CoreTeamMember; onClose: ()
                     event.stopPropagation();
                     setActivePopup(activePopup === 'whatsapp' ? null : 'whatsapp');
                   }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '50px', fontSize: '.75rem', fontWeight: 800 }}
                 >
-                  <DynamicIcon name="MessageSquare" size={14} /> WHATSAPP
+                  💬 WhatsApp
                 </button>
                 {activePopup === 'whatsapp' && (
-                  <CopyPopup value={whatsappValue ?? ''} onClose={() => setActivePopup(null)} />
+                  <CopyPopup value={whatsappValue} onClose={() => setActivePopup(null)} />
                 )}
               </div>
+            )}
+
+            {member.instagram && (
+              <a
+                href={member.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="modal-social-btn btn-instagram"
+              >
+                📸 Instagram
+              </a>
             )}
 
             {member.email && (
@@ -181,9 +176,8 @@ function ModalContent({ member, onClose }: { member: CoreTeamMember; onClose: ()
                     event.stopPropagation();
                     setActivePopup(activePopup === 'email' ? null : 'email');
                   }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '50px', fontSize: '.75rem', fontWeight: 800 }}
                 >
-                  <DynamicIcon name="Mail" size={14} /> EMAIL
+                  ✉️ Email
                 </button>
                 {activePopup === 'email' && (
                   <CopyPopup value={member.email} onClose={() => setActivePopup(null)} />

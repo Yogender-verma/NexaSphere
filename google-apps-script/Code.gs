@@ -113,18 +113,6 @@ function doPost(e) {
     var now  = new Date().toISOString();
 
     var sheet = getOrCreateSheet();
-    var email = (data.collegeEmail || '').trim().toLowerCase();
-
-    // SERVER-SIDE DUPLICATE CHECK
-    if (email) {
-      var rows = sheet.getDataRange().getValues();
-      for (var i = 1; i < rows.length; i++) {
-        var existingEmail = String(rows[i][2] || '').trim().toLowerCase(); // Column C
-        if (existingEmail === email) {
-          return _respond({ ok: false, error: 'This email address is already registered.' });
-        }
-      }
-    }
 
     var row = [
       now,                                                              // Timestamp (server)
