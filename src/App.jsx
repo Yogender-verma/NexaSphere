@@ -438,14 +438,14 @@ export default function App() {
       {/* Back to top button */}
       {cinDone && <button id="back-to-top" aria-label="Back to top">↑</button>}
 
-      {/* ── Floating Search Button ── */}
+      {/* ── Floating Search Button (bottom-left) ── */}
       {cinDone && (
         <button
           onClick={() => setSearchOpen(true)}
           aria-label="Open search"
           title="Search (Ctrl+K)"
           style={{
-            position: 'fixed', bottom: '80px', right: '24px', zIndex: 8500,
+            position: 'fixed', bottom: '80px', left: '24px', zIndex: 8500,
             width: '46px', height: '46px', borderRadius: '50%',
             background: 'linear-gradient(135deg,#CC1111,#880000)',
             border: 'none', cursor: 'pointer',
