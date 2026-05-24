@@ -296,14 +296,26 @@ export default function App() {
     return () => { alive = false; };
   }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     const btn = document.getElementById('back-to-top');
     if (!btn) return;
-    const fn = () => btn.classList.toggle('visible', window.scrollY > 400);
-    window.addEventListener('scroll', fn, { passive:true });
-    btn.addEventListener('click', () => window.scrollTo({ top:0, behavior:'smooth' }));
-    return () => window.removeEventListener('scroll', fn);
-  }, []);
+
+    const handleScroll = () => {
+      btn.classList.toggle('visible', window.scrollY > 400);
+    };
+
+    const handleBackToTop = () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    btn.addEventListener('click', handleBackToTop);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      btn.removeEventListener('click', handleBackToTop);
+    };
+  }, [cinDone]);
 
   useEffect(()=>{
     if (page) return;

@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { events as fallbackEvents } from '../../data/eventsData';
 import { DynamicIcon } from '../../shared/Icons';
 import BookmarkButton from '../../components/common/BookmarkButton';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
@@ -52,7 +51,7 @@ function EventsSectionContent({ onEventClick, events = fallbackEvents }) {
   return (
     <section className="section" id="section-events">
       <div className="container">
-        <div>
+        <div className="section-heading">
           <h2 className="section-title pop-word">Our Events</h2>
           <p className="section-subtitle pop-in" style={{animationDelay:'.1s'}}>Where Ideas Come to Life</p>
         </div>
