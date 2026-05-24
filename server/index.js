@@ -548,8 +548,12 @@ function isPhoneish(s) {
 }
 
 app.get('/healthz', async (req, res) => {
-  const events = await listEventsStore();
-  res.json({ ok: true, events: events.length, storage: HAS_SUPABASE ? 'supabase' : 'file' });
+  try {
+    const events = await listEventsStore();
+    res.json({ ok: true, events: events.length, storage: HAS_SUPABASE ? 'supabase' : 'file' });
+  } catch (e) {
+    res.status(503).json({ ok: false, error: e?.message || 'Health check failed', storage: HAS_SUPABASE ? 'supabase' : 'file' });
+  }
 });
 
 app.get('/api/content/events', async (req, res) => {
@@ -964,6 +968,10 @@ app.put('/api/portfolio', async (req, res) => {
   }
 });
 
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[Process] Unhandled rejection:', reason instanceof Error ? reason.message : reason);
+});
 
 const port = Number(process.env.PORT || 8787);
 if (!process.env.VERCEL) {
