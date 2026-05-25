@@ -115,6 +115,25 @@ function requiredStrongPassword(name) {
 
 const ADMIN_EVENT_PASSWORD = requiredStrongPassword('ADMIN_EVENT_PASSWORD');
 
+if (process.env.PUBLIC_APP_URL) {
+  if (process.env.PUBLIC_APP_URL.includes(',')) {
+    throw new Error('PUBLIC_APP_URL must be a single URL, not a comma-separated list');
+  }
+  try {
+    new URL(process.env.PUBLIC_APP_URL);
+  } catch {
+    throw new Error(`PUBLIC_APP_URL must be a valid absolute URL, got: ${process.env.PUBLIC_APP_URL}`);
+  }
+}
+
+function getPublicAppUrl() {
+  if (process.env.PUBLIC_APP_URL) {
+    return process.env.PUBLIC_APP_URL.replace(/\/+$/, '');
+  }
+  const firstOrigin = process.env.CORS_ORIGIN?.split(',')[0]?.trim();
+  return firstOrigin || 'http://localhost:5173';
+}
+
 function normalizePrivateKey(k) {
   return k.includes('\\n') ? k.replace(/\\n/g, '\n') : k;
 }
@@ -810,7 +829,7 @@ async function handleForm(formType, req, res) {
 
     // NEW: Send a welcome email to the user
     try {
-      const verifyUrl = `${process.env.CORS_ORIGIN || 'http://localhost:5173'}/verify?email=${encodeURIComponent(req.body.collegeEmail)}`;
+      const verifyUrl = `${getPublicAppUrl()}/verify?email=${encodeURIComponent(req.body.collegeEmail)}`;
       await sendWelcomeVerificationEmail(req.body.collegeEmail, req.body.fullName, verifyUrl);
     } catch (emailErr) {
       console.error('[Form Handler] Failed to send welcome email:', emailErr);
