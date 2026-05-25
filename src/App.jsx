@@ -56,6 +56,7 @@ import { useDeveloperMode } from './hooks/useDeveloperMode';
 
 import { BookmarkProvider } from './context/BookmarkContext';
 import BookmarksDrawer from './components/bookmarks/BookmarksDrawer';
+import { useTheme } from './hooks/useTheme';
 
 const MNH = 88, DNH = 64;
 const TABS = ['Home','Dashboard','Activities','Events','Projects','Roadmaps','Portfolio','Collab','About','Team','Contact'];
@@ -230,16 +231,11 @@ export default function App() {
   const [wipeOn,     setWipeOn]     = useState(false);
   const [wipePh,     setWipePh]     = useState('out');
   const [page,       setPage]       = useState(null);
-  const [theme,      setTheme]      = useState(() => localStorage.getItem('ns-theme') || 'dark');
   const [eventsData, setEventsData] = useState(fallbackEvents);
   const [searchOpen, setSearchOpen] = useState(false);   // ← Search state
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const { resolvedTheme: theme } = useTheme();
   const { isOpen: isTerminalOpen, closeTerminal } = useDeveloperMode();
-
-  useEffect(()=>{
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('ns-theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -248,10 +244,6 @@ export default function App() {
       const name = match[1];
       setPage({ type: 'portfolio', username: name });
     }
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    setTheme(t => t === 'dark' ? 'light' : 'dark');
   }, []);
 
   useEffect(() => {
@@ -483,7 +475,6 @@ export default function App() {
         <Navbar
           activeTab={activeTab}
           onTabChange={onTab}
-          onToggleTheme={toggleTheme}
           theme={theme}
           onApply={openApply}
           onJoin={openJoin}
