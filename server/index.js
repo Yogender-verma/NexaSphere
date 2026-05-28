@@ -574,7 +574,6 @@ app.get("/api/portfolio/:username", async (req, res) => {
   }
 });
 
-app.put("/api/portfolio", portfolioRateLimiter, async (req, res) => {
 app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
   try {
     const body = req.body || {};
@@ -592,6 +591,11 @@ app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
     }
     if (!passkey || passkey.length < 12) {
       return res.status(400).json({ error: 'Passkey must be at least 12 characters long' });
+    }
+
+    const existing = await portfolioRepository.getByUsername(username);
+    if (!existing) {
+      return res.status(404).json({ error: 'Portfolio not found. A registration process is required to create a new portfolio.' });
     }
 
     const lockout = checkPasskeyLockout(username, ip);
