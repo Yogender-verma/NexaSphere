@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
-import GlobalErrorBoundary from './components/GlobalErrorBoundary.jsx';
+import './i18n';
 import { registerSW } from 'virtual:pwa-register';
 import { initializeSentry } from './utils/errorTracking.js';
 import * as Sentry from '@sentry/react';
@@ -25,11 +25,12 @@ registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <GlobalErrorBoundary>
-      <SocketProvider>
-        <App />
-      </SocketProvider>
-    </GlobalErrorBoundary>
+    <HelmetProvider>
+      <ThemeProvider>
+        <GlobalErrorBoundary>
+          <App />
+        </GlobalErrorBoundary>
+      </ThemeProvider>
+    </HelmetProvider>
   </StrictMode>
 );
-

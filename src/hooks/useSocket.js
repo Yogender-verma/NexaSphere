@@ -3,39 +3,50 @@
  * Provides reactive access to Socket.IO connections, room subscriptions, and event emitters
  */
 
-import { useEffect, useState, useCallback } from 'react';
-import socketClient from '../utils/socketClient';
+import { useEffect, useState, useCallback } from "react";
+import socketClient from "../utils/socketClient";
+import { getSocketServerUrl } from "../utils/runtimeConfig";
 
 export function useSocket(serverUrl) {
   const [connected, setConnected] = useState(false);
   const [socketId, setSocketId] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     // Initialize socket connection if not already done
-    const base = serverUrl || (import.meta?.env?.VITE_API_BASE || window.location.origin).replace(/\/+$/, '');
+    const base = serverUrl || getSocketServerUrl();
     const socket = socketClient.initializeSocket(base);
+    if (!socket) {
+      setConnected(false);
+      setSocketId(null);
+      return undefined;
+    }
 
     const onConnect = () => {
+      if (!isMounted) return;
       setConnected(true);
       setSocketId(socket.id);
     };
 
     const onDisconnect = () => {
+      if (!isMounted) return;
       setConnected(false);
       setSocketId(null);
     };
 
-    // Listen to standard connection events
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
+    // Listen to standard connection events using socket directly
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
 
     // Sync initial state
     setConnected(socket.connected || false);
     setSocketId(socket.id || null);
 
     return () => {
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
+      isMounted = false;
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
     };
   }, [serverUrl]);
 
@@ -66,15 +77,15 @@ export function useSocket(serverUrl) {
   const on = useCallback((eventName, handler) => {
     socketClient.on(eventName, handler);
     return () => {
-      socketClient.off(eventName);
+      socketClient.off(eventName, handler);
     };
   }, []);
 
   /**
    * Unregister dynamic listener for a custom socket event
    */
-  const off = useCallback((eventName) => {
-    socketClient.off(eventName);
+  const off = useCallback((eventName, handler) => {
+    socketClient.off(eventName, handler);
   }, []);
 
   /**
