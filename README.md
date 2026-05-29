@@ -326,6 +326,7 @@ This project is licensed under the **MIT License** — see [LICENSE](./LICENSE) 
 <a href="https://github.com/Pratikshya32"><img src="https://github.com/Pratikshya32.png" width="50px" alt="Pratikshya32" title="Pratikshya32" /></a>
 <a href="https://github.com/Meenbudha"><img src="https://github.com/Meenbudha.png" width="50px" alt="Meenbudha" title="Meenbudha" /></a>
 <a href="https://github.com/pithva007"><img src="https://github.com/pithva007.png" width="50px" alt="pithva007" title="pithva007" /></a>
+<a href="https://github.com/advikdivekar"><img src="https://github.com/advikdivekar.png" width="50px" alt="advikdivekar" title="advikdivekar" /></a>
 <!-- CONTRIBUTORS_END -->
 
 </div>
