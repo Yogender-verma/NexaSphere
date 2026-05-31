@@ -7,7 +7,11 @@ import useFormValidation from '../hooks/useFormValidation';
 // ---------------------------------------------------------------------------
 
 /** Runs a single-field validation and returns the resulting errors object. */
-function validateSingleField(fieldName: string, value: unknown, rules: Record<string, unknown>) {
+function validateSingleField(
+  fieldName: string,
+  value: unknown,
+  rules: Record<string, unknown>
+): any {
   const { result } = renderHook(() =>
     useFormValidation({ [fieldName]: value }, { [fieldName]: rules })
   );
