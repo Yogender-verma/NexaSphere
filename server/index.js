@@ -52,14 +52,17 @@ const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 const app = express();
 initializeSentry(app);
 
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-  : true;
+if (!process.env.CORS_ORIGIN) {
+  throw new Error('CORS_ORIGIN environment variable must be set.');
+}
+
+const allowedOrigins = process.env.CORS_ORIGIN.split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 app.use(helmet());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
+
 app.use(express.json({ limit: '512kb' }));
 app.use(morgan('combined'));
 app.use(performanceMonitor);
