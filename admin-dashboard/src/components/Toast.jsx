@@ -11,12 +11,19 @@ export function Toast() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   }, []);
 
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
   useEventListener(EVENTS.NOTIFY, handleNotify);
 
   return (
-    <div className="toast-container">
+    <div className="toast-container" role="status" aria-live="polite">
       {toasts.map(t => (
-        <div key={t.id} className={`toast toast-${t.type}`}>{t.message}</div>
+        <div key={t.id} className={`toast toast-${t.type}`}>
+          <span>{t.message}</span>
+          <button onClick={() => removeToast(t.id)} className="toast-close" aria-label="Close notification">×</button>
+        </div>
       ))}
     </div>
   );
