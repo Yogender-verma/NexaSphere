@@ -4,7 +4,7 @@ import '../styles/chatbot.css';
 import PromptHistorySidebar from '../components/history/PromptHistorySidebar';
 import SearchBar from '../components/history/SearchBar';
 import PinnedChats from '../components/history/PinnedChats';
-import { savePrompt } from '../lib/promptStore';
+import { savePrompt, exportPrompts } from '../lib/promptStore';
 import { initializeWorkspaces } from '../lib/workspaceService';
 import { buildUrl, getAiApiBase } from '../utils/runtimeConfig';
 
