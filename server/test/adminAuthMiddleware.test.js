@@ -165,7 +165,8 @@ test('Security Audit & Validation: Admin Authentication Rate Limiter', async (t)
     const massiveHeader = '1.1.1.1,' + 'A'.repeat(50000);
     const req = {
       body: { username: 'admin', password: 'wrongpassword' },
-      headers: { 'x-forwarded-for': massiveHeader },
+      ip: massiveHeader,
+      headers: {},
       get: () => '',
     };
 
