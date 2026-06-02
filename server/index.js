@@ -452,9 +452,14 @@ app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
 
     clearPasskeyAttempts(username, ip);
 
-    const saved = await portfolioRepository.createOrUpdate(body);
+    const saved = await portfolioRepository.createOrUpdate(body, isNewRegistration);
     return res.json({ ok: true, portfolio: saved });
   } catch (err) {
+    if (err.code === '23505') {
+      return res
+        .status(409)
+        .json({ error: 'Username already exists. Another request may have just created it.' });
+    }
     console.error('Error saving portfolio:', err);
     return res.status(500).json({ error: err.message || 'Internal server error' });
   }
