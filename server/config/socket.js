@@ -6,6 +6,7 @@
 import { Server } from 'socket.io';
 import logger from '../utils/logger.js';
 import { getAdminSession } from '../repositories/adminSessionsRepository.js';
+import { validationMiddleware } from '../sockets/validationMiddleware.js';
 
 let io = null;
 const connectedUsers = new Map();
@@ -252,6 +253,9 @@ export function _onConnection(socket) {
   // Apply WebSocket backpressure, slow consumer protection and emit throttling
   applyBackpressureProtection(socket);
 
+  // Apply payload validation middleware to prevent DoS attacks
+  socket.use(validationMiddleware);
+
   logger.info('User connected', { socketId: socket.id, admin: !!socket.adminAuthenticated });
 
   // Auto-join authenticated admin sockets to admin room
@@ -497,6 +501,9 @@ export function _onConnection(socket) {
 
   // Error handling
   socket.on('error', (error) => {
+    if (error && error.message) {
+      socket.emit('validation_error', { error: error.message });
+    }
     logger.error('Socket error', { error: error.message, socketId: socket.id });
   });
 }
