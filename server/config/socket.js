@@ -222,6 +222,7 @@ export function initializeSocketIO(httpServer) {
     reconnectionAttempts: 5,
     pingTimeout: 20000,
     pingInterval: 10000,
+    transports: ['websocket', 'polling'],
   });
 
   // Connection auth middleware — checks handshake auth token

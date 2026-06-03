@@ -31,7 +31,7 @@ export const initializeSocket = (
       reconnectionDelayMax: 5000,
       timeout: 20000,
       autoConnect: true,
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
     });
 
     socketInstance.on('connect', () => {
