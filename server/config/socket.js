@@ -210,6 +210,9 @@ function parseBearer(authHeader) {
  * Initialize Socket.IO
  * @param {Object} httpServer - HTTP server instance
  */
+import { createAdapter } from '@socket.io/redis-adapter';
+import { getRedisClient } from '../utils/redis.js';
+
 export function initializeSocketIO(httpServer) {
   io = new Server(httpServer, {
     cors: {
@@ -224,6 +227,10 @@ export function initializeSocketIO(httpServer) {
     pingInterval: 10000,
     transports: ['websocket', 'polling'],
   });
+
+  const pubClient = getRedisClient();
+  const subClient = pubClient.duplicate();
+  io.adapter(createAdapter(pubClient, subClient));
 
   // Connection auth middleware — checks handshake auth token
   io.use(async (socket, next) => {
