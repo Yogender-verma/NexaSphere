@@ -14,6 +14,7 @@ import adminStreamRouter from './routes/adminStream.js';
 import documentationRouter from './routes/documentation.js';
 import monitoringRouter from './routes/monitoring.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
+import { tracingMiddleware } from './middleware/tracingMiddleware.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { initializeSentry, addSentryErrorHandler } from './utils/sentry.js';
 import {
@@ -73,6 +74,8 @@ const allowedOrigins = process.env.CORS_ORIGIN.split(',')
 app.use(helmet());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
+app.use(tracingMiddleware);
+
 app.use(express.json({ limit: '512kb' }));
 app.use(morgan('combined'));
 app.use(performanceMonitor);
@@ -82,12 +85,13 @@ app.use('/api', apiRateLimiter);
 
 function requestLogger(req, res, next) {
   const start = process.hrtime.bigint();
-  const { method, path } = req;
+  const { method, path, reqId } = req;
 
   res.on('finish', () => {
     const duration = Number(process.hrtime.bigint() - start) / 1e6;
     const status = res.statusCode;
-    const message = `[${method}] ${path} → ${status} (${Math.round(duration)}ms)`;
+    const prefix = reqId ? `[${reqId}] ` : '';
+    const message = `${prefix}[${method}] ${path} → ${status} (${Math.round(duration)}ms)`;
 
     if (status >= 500) {
       console.error(message);
@@ -346,33 +350,38 @@ app.post('/api/notifications/unsubscribe', validatePushSubscription, (req, res) 
   }
 });
 
-app.post('/api/notifications/mark-read', adminAuth, notificationRateLimiter, (req, res) => {
+app.post('/api/notifications/mark-read', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
     const { id, userId } = req.body || {};
     if (!id) return res.status(400).json({ error: 'id required' });
     const uid = userId || 'global';
-    const ok = notificationsService.markAsRead(uid, id);
+    const ok = await notificationsService.markAsRead(uid, id);
     return res.json({ success: ok });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/notifications/mark-all-read', adminAuth, notificationRateLimiter, (req, res) => {
-  try {
-    const { userId } = req.body || {};
-    notificationsService.markAllAsRead(userId || 'global');
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+app.post(
+  '/api/notifications/mark-all-read',
+  adminAuth,
+  notificationRateLimiter,
+  async (req, res) => {
+    try {
+      const { userId } = req.body || {};
+      await notificationsService.markAllAsRead(userId || 'global');
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
   }
-});
+);
 
-app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, (req, res) => {
+app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
     const id = req.params.id;
     const userId = req.query.userId || 'global';
-    const removed = notificationsService.removeNotification(userId, id);
+    const removed = await notificationsService.removeNotification(userId, id);
     if (!removed) return res.status(404).json({ error: 'Notification not found' });
     return res.json({ success: true });
   } catch (err) {
@@ -380,23 +389,23 @@ app.delete('/api/notifications/:id', adminAuth, notificationRateLimiter, (req, r
   }
 });
 
-app.delete('/api/notifications', adminAuth, notificationRateLimiter, (req, res) => {
+app.delete('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
-    notificationsService.clearAll(userId);
+    await notificationsService.clearAll(userId);
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/notifications', adminAuth, notificationRateLimiter, (req, res) => {
+app.post('/api/notifications', adminAuth, notificationRateLimiter, async (req, res) => {
   try {
     const { userId, title, message, type, link } = req.body || {};
     if (!title || !message) {
       return res.status(400).json({ error: 'title and message are required' });
     }
-    const note = notificationsService.addNotification(userId || 'global', {
+    const note = await notificationsService.addNotification(userId || 'global', {
       title,
       message,
       type,
@@ -520,10 +529,10 @@ function clearPasskeyAttempts(username, ip) {
   failedPasskeyAttemptsByUsername.delete(userKey);
 }
 
-app.get('/api/notifications', (req, res) => {
+app.get('/api/notifications', async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
-    const list = notificationsService.getNotifications(userId);
+    const list = await notificationsService.getNotifications(userId);
     return res.json({ notifications: list });
   } catch (err) {
     return res.status(500).json({ error: err.message });
