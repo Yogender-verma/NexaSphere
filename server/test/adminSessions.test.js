@@ -17,6 +17,8 @@ let mockQueriesResult = {
 
 // Intercept PostgreSQL pool connection with a robust mock
 pg.Pool = class MockPool {
+  // Mock event listener attachment to avoid TypeError from pool.on
+  on(event, handler) {}
   async connect() {
     return {
       query: async (sql, params) => {

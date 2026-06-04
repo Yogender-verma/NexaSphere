@@ -4,13 +4,31 @@ import {
   revokeAdminSession,
   startAdminSessionCleanup,
 } from '../repositories/adminSessionsRepository.js';
+import crypto from 'crypto';
 
+const CONSTANT_AUTH_LENGTH = 64; // Pad all auth inputs to prevent timing leaks
+
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  
+  // Pad both buffers to constant length to prevent timing attacks based on input length
+  const paddedA = Buffer.alloc(CONSTANT_AUTH_LENGTH);
+  const paddedB = Buffer.alloc(CONSTANT_AUTH_LENGTH);
+  bufA.copy(paddedA);
+  bufB.copy(paddedB);
+
+  return crypto.timingSafeEqual(paddedA, paddedB);
+}
 const ADMIN_USERNAME = requiredEnv('ADMIN_USERNAME');
 const ADMIN_PASSWORD = requiredStrongPassword('ADMIN_PASSWORD');
 const LOGIN_WINDOW_MS = parsePositiveInteger(process.env.ADMIN_LOGIN_WINDOW_MS, 15 * 60 * 1000);
 const LOGIN_MAX_ATTEMPTS = parsePositiveInteger(process.env.ADMIN_LOGIN_MAX_ATTEMPTS, 5);
 const LOGIN_MAX_TRACKED_IPS = parsePositiveInteger(process.env.ADMIN_LOGIN_MAX_TRACKED_IPS, 10000);
-const LOGIN_CLEANUP_INTERVAL_MS = parsePositiveInteger(process.env.ADMIN_LOGIN_CLEANUP_INTERVAL_MS, 15 * 60 * 1000);
+const LOGIN_CLEANUP_INTERVAL_MS = parsePositiveInteger(
+  process.env.ADMIN_LOGIN_CLEANUP_INTERVAL_MS,
+  15 * 60 * 1000
+);
 
 const loginAttemptsByIp = new Map();
 
@@ -59,7 +77,7 @@ function requiredStrongPassword(name) {
 }
 
 function getClientIp(req) {
-  const ip = String(req.ip || req.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim() || 'unknown';
+  const ip = String(req.ip || 'unknown').trim();
   // Truncate to maximum 128 characters to prevent extremely large malicious headers from causing memory exhaustion
   return ip.slice(0, 128);
 }
@@ -131,7 +149,7 @@ function parseBearer(authHeader = '') {
 function getCookie(req, name) {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) return null;
-  const cookies = cookieHeader.split(';').map(c => c.trim());
+  const cookies = cookieHeader.split(';').map((c) => c.trim());
   for (const cookie of cookies) {
     const [key, value] = cookie.split('=');
     if (key === name) return value;
@@ -145,7 +163,10 @@ async function requireAdmin(req, res, next) {
       return res.status(400).json({ error: 'Do not pass tokens in URLs.' });
     }
 
-    const token = req.cookies?.ns_admin_token || getCookie(req, 'ns_admin_token') || parseBearer(req.headers.authorization || '');
+    const token =
+      req.cookies?.ns_admin_token ||
+      getCookie(req, 'ns_admin_token') ||
+      parseBearer(req.headers.authorization || '');
     const session = await getAdminSession(token);
 
     if (!session) {
@@ -159,6 +180,28 @@ async function requireAdmin(req, res, next) {
   }
 }
 
+function requireRole(allowedRoles) {
+  if (!Array.isArray(allowedRoles) || allowedRoles.length === 0) {
+    throw new Error('requireRole must be initialized with a non-empty array of allowed roles');
+  }
+
+  return async (req, res, next) => {
+    // Ensure the request is already authenticated (e.g. by requireAdmin)
+    if (!req.adminSession) {
+      return res.status(401).json({ error: 'Unauthorized: No session found' });
+    }
+    
+    // Assume role is attached to the session metadata, defaulting to 'user' to prevent privilege escalation
+    const userRole = req.adminSession.metadata?.role || 'user';
+    
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ error: 'Forbidden: Insufficient privileges' });
+    }
+    
+    next();
+  };
+}
+
 async function login(req, res) {
   try {
     const u = String(req.body?.username || '').trim();
@@ -170,7 +213,7 @@ async function login(req, res) {
       return res.status(429).json({ error: 'Too many login attempts. Please wait and try again.' });
     }
 
-    if (u !== ADMIN_USERNAME || p !== ADMIN_PASSWORD) {
+    if (!safeEqual(u, ADMIN_USERNAME) || !safeEqual(p, ADMIN_PASSWORD)) {
       recordLoginAttempt(ip);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -203,9 +246,13 @@ async function login(req, res) {
 
 async function logout(req, res) {
   try {
-    const token = req.cookies?.ns_admin_token || getCookie(req, 'ns_admin_token') || parseBearer(req.headers.authorization || '');
+    const token = req.adminSession?.token;
+
     if (token) {
       await revokeAdminSession(token);
+    } else {
+      // In case logout is called without authentication
+      return res.status(401).json({ error: 'No active session to revoke' });
     }
 
     res.clearCookie('ns_admin_token', {
@@ -224,6 +271,7 @@ export const adminAuthMiddleware = {
   login,
   logout,
   requireAdmin,
+  requireRole,
   // Private test exports for auditing & validation
   _getLoginAttemptsMapSize: () => loginAttemptsByIp.size,
   _clearAllLoginAttempts: () => loginAttemptsByIp.clear(),
