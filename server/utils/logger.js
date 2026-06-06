@@ -35,27 +35,33 @@ const colors = {
 winston.addColors(colors);
 
 // Define log format
+// Define base log layout template
+const logLayout = winston.format.printf((info) => {
+  const { timestamp, level, message, ...args } = info;
+
+  const ts = timestamp ? timestamp.slice(0, 19).replace("T", " ") : "";
+
+  return `${ts} [${level}]: ${message} ${
+    Object.keys(args).length ? JSON.stringify(args, null, 2) : ""
+  }`;
+});
+
+// Define clean log format for file transports
 const format = winston.format.combine(
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
   winston.format.errors({ stack: true }),
-  winston.format.printf((info) => {
-    const { timestamp, level, message, ...args } = info;
-
-    const ts = timestamp.slice(0, 19).replace("T", " ");
-
-    return `${ts} [${level}]: ${message} ${
-      Object.keys(args).length ? JSON.stringify(args, null, 2) : ""
-    }`;
-  })
+  logLayout
 );
 
 // Define transports
 const transports = [
-  // Console transport
+  // Console transport (Colorizes exclusively for terminal output)
   new winston.transports.Console({
     format: winston.format.combine(
+      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
+      winston.format.errors({ stack: true }),
       winston.format.colorize({ all: true }),
-      format
+      logLayout
     ),
   }),
 
