@@ -865,6 +865,10 @@ function MainRouter({
             />
             {/* ── Public Portfolio ── */}
             <Route path="/p/:username" element={<PublicPortfolioWrapper onBack={onBackHome} />} />
+            <Route
+              path="/profile/:username"
+              element={<PublicPortfolioWrapper onBack={onBackHome} />}
+            />
 
             {/* ── Collab ── */}
             <Route

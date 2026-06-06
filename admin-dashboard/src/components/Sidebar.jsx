@@ -27,6 +27,12 @@ const links = [
   { to: '/dashboard/recruitment', label: 'Recruitment', icon: 'UserPlus' },
   { to: '/dashboard/certificates', label: 'Certificates', icon: 'Award' },
   { to: '/dashboard/announcements', label: 'Announcements', icon: 'Megaphone' },
+  {
+    to: '/dashboard/portfolios',
+    label: 'Portfolios',
+    icon: 'FileText',
+    requiredScope: 'events:read',
+  },
 ];
 
 export function Sidebar() {
