@@ -391,6 +391,32 @@ async function fetchWithAuth(url, options = {}) {
         });
       }
 
+      // /api/admin/portfolios
+      else if (url.startsWith('/api/admin/portfolios')) {
+        let portfolios = getDb('portfolios', []);
+        if (method === 'GET') {
+          const queryParams = new URLSearchParams(url.split('?')[1] || '');
+          const username = queryParams.get('username');
+          if (username) {
+            const found = portfolios.find((p) => p.username === username);
+            resolve({ portfolios: found ? [found] : [] });
+          } else {
+            resolve({ portfolios });
+          }
+        }
+        if (method === 'DELETE' && url.includes('/achievements/')) {
+          resolve({ ok: true });
+        }
+        if (method === 'POST' && url.includes('/achievements')) {
+          const newAch = {
+            ...body,
+            id: Date.now().toString(),
+            awarded_at: new Date().toISOString(),
+          };
+          resolve({ achievement: newAch });
+        }
+      }
+
       // /api/admin/announcements
       else if (url.startsWith('/api/admin/announcements')) {
         let announcements = getDb('announcements', []);
@@ -750,6 +776,24 @@ export const api = {
       eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Certificate revoked' });
       return result;
     },
+  },
+
+  portfolios: {
+    getAll: (params = '') => fetchWithAuth(`/api/admin/portfolios${params}`),
+    getAchievements: (username) =>
+      fetchWithAuth(`/api/admin/portfolios/${encodeURIComponent(username)}/achievements`),
+    awardAchievement: (username, achievement) =>
+      fetchWithAuth(`/api/admin/portfolios/${encodeURIComponent(username)}/achievements`, {
+        method: 'POST',
+        body: JSON.stringify(achievement),
+      }),
+    removeAchievement: (username, name) =>
+      fetchWithAuth(
+        `/api/admin/portfolios/${encodeURIComponent(username)}/achievements/${encodeURIComponent(name)}`,
+        {
+          method: 'DELETE',
+        }
+      ),
   },
 
   announcements: {
