@@ -271,7 +271,6 @@ async function fetchWithAuth(url, options = {}) {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${auth.getToken()}`,
           ...options.headers,
         },
       });
