@@ -126,6 +126,11 @@ describe('auth.verifySession', () => {
 });
 
 describe('auth.getEmail', () => {
+  beforeEach(async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true });
+    await auth.logout();
+  });
+
   test('getEmail returns stored email after login', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
