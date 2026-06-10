@@ -92,6 +92,11 @@ const links = [
     icon: 'FileText',
     requiredScope: 'events:read',
   },
+  {
+    to: '/dashboard/mentorship',
+    label: 'Mentorship',
+    icon: 'Users',
+  },
 ];
 
 export function Sidebar() {

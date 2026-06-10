@@ -49,6 +49,7 @@ import { studentUsersRepository } from './repositories/studentUsersRepository.js
 import * as studentAuthController from './controllers/studentAuthController.js';
 import * as forumController from './controllers/forumController.js';
 import { requireStudentAuth } from './middleware/studentAuthMiddleware.js';
+import * as mentorshipController from './controllers/mentorshipController.js';
 import { xssSanitizer } from './middleware/xssSanitizer.js';
 import { tierRateLimiter } from './middleware/tierRateLimiter.js';
 import compression from 'compression';
@@ -899,6 +900,22 @@ app.post('/api/forum/threads/:id/accept/:replyId', forumController.acceptReply);
 app.patch('/api/admin/forum/threads/:id/moderate', adminAuth, forumController.moderateThread);
 app.patch('/api/admin/forum/replies/:replyId/moderate', adminAuth, forumController.moderateReply);
 app.get('/api/admin/forum/threads', adminAuth, forumController.adminListThreads);
+
+// ── Mentorship & Buddy System ──
+app.get('/api/mentorship/mentors', mentorshipController.listMentors);
+app.get('/api/mentorship/mentors/:id', mentorshipController.getMentor);
+app.post('/api/mentorship/mentors', mentorshipController.registerMentor);
+app.put('/api/mentorship/mentors/:id', mentorshipController.updateMentor);
+app.post('/api/mentorship/requests', mentorshipController.requestMentorship);
+app.get('/api/mentorship/requests', mentorshipController.listMentorships);
+app.get('/api/mentorship/requests/:id', mentorshipController.getMentorship);
+app.put('/api/mentorship/requests/:id/status', mentorshipController.updateMentorshipStatus);
+app.post('/api/mentorship/requests/:id/sessions', mentorshipController.logSession);
+app.get('/api/mentorship/requests/:id/sessions', mentorshipController.listSessions);
+app.post('/api/mentorship/buddy-pairs', mentorshipController.createBuddyPair);
+app.get('/api/mentorship/buddy-pairs', mentorshipController.listBuddyPairs);
+app.get('/api/admin/mentorships', adminAuth, mentorshipController.adminListAll);
+app.get('/api/admin/mentors', adminAuth, mentorshipController.adminListMentors);
 
 // ── Search, Discovery & Recommendation Engine ──
 app.get('/api/search', searchController.search);
