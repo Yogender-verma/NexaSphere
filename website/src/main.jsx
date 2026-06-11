@@ -49,6 +49,15 @@ _updateSW = registerSW({
   },
 });
 
+// Trigger an immediate check for updates on app load
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then((registration) => {
+    registration.update().catch((err) => {
+      console.warn('[PWA] Service worker update check failed on app load:', err);
+    });
+  });
+}
+
 initSyncManager();
 
 createRoot(document.getElementById('root')).render(
