@@ -128,3 +128,4 @@ issues*.json
 ci-logs.txt
 *_EXAMPLE*.js
 *_EXAMPLE*.jsx
+vault-secrets.json
