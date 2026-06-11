@@ -67,25 +67,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 
-const REQUIRED_ENV_VARS = [
-  'CORS_ORIGIN',
-  'ADMIN_EVENT_PASSWORD',
-];
-
-function validateEnvironment() {
-  const missing = REQUIRED_ENV_VARS.filter(
-    (env) => !process.env[env]
-  );
-
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}`
-    );
-  }
-
-  console.log('Environment validation passed');
-}
-
 validateEnvironment();
 
 const app = express();
