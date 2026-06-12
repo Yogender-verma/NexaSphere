@@ -58,6 +58,7 @@
     "lightningcss-linux-x64-musl": "1.32.0"
   },
   "dependencies": {
+    "jose": "^5.9.6",
     "jwt-decode": "^4.0.0",
     "@rollup/rollup-linux-arm64-gnu": "4.61.1",
     "@rollup/rollup-linux-arm64-musl": "4.60.0",

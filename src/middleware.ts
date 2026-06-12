@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 // Matcher to protect workspace routes (e.g., /w/:workspaceId/...)
 export const config = {
   matcher: ['/w/:workspaceId*/:path*', '/api/w/:workspaceId*/:path*'],
 };
+
+const JWKS_URI = process.env.JWKS_URI || `${process.env.NEXTAUTH_URL || ''}/.well-known/jwks.json`;
+const EXPECTED_ISSUER = process.env.JWT_ISSUER || process.env.NEXTAUTH_URL || '';
+const EXPECTED_AUDIENCE = process.env.JWT_AUDIENCE || 'nexasphere';
+
+let jwksClient: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+function getJWKS() {
+  if (!jwksClient && JWKS_URI) {
+    const url = new URL(JWKS_URI);
+    jwksClient = createRemoteJWKSet(url);
+  }
+  return jwksClient;
+}
 
 /**
  * Next.js Middleware to enforce Multi-Tenant isolation and verify tenant-scoped access.
@@ -45,10 +60,8 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // 1. Decode / Verify session token
-    // In a real application, verify JWT using jose or similar edge-safe library.
-    // Here we decode a mock JWT or verify session using our database.
-    const decodedSession = parseJwt(token);
+    // 1. Verify session token cryptographically
+    const decodedSession = await verifyJwt(token);
 
     if (!decodedSession || !decodedSession.userId) {
       throw new Error('Invalid session token payload');
@@ -99,21 +112,24 @@ export async function middleware(request: NextRequest) {
 }
 
 /**
- * Basic base64 decoding helper for JWT (Edge compatible)
+ * Cryptographically verify a JWT using the configured JWKS endpoint.
+ * Rejects tokens with alg:none, expired tokens, and invalid claims.
  */
-function parseJwt(token: string) {
+async function verifyJwt(token: string): Promise<Record<string, unknown> | null> {
   try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
+    const client = getJWKS();
+    if (!client) {
+      throw new Error('JWKS client not configured — set JWKS_URI or NEXTAUTH_URL');
+    }
+
+    const { payload } = await jwtVerify(token, client, {
+      issuer: EXPECTED_ISSUER || undefined,
+      audience: EXPECTED_AUDIENCE || undefined,
+    });
+
+    return payload as Record<string, unknown>;
+  } catch (err) {
+    console.error('[Middleware] JWT verification failed:', err);
     return null;
   }
 }
@@ -141,11 +157,10 @@ async function fetchTenantAccess(
     const data = await res.json();
     return !!data.hasAccess;
   } catch (err) {
-    console.warn(
-      '[Middleware] Failed to verify tenant access via internal API. Assuming local check:',
+    console.error(
+      '[Middleware] Failed to verify tenant access via internal API. Denying access:',
       err
     );
-    // Return true for local environment placeholders if internal service is not reachable
-    return true;
+    return false;
   }
 }
