@@ -100,6 +100,9 @@ function normalizeBase(data) {
 
 const recruitmentSubmissionSchema = CommonIdentitySchema.merge(RecruitmentExtrasSchema)
   .superRefine((data, ctx) => {
+    if (!data.collegeEmail && !data.email) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['collegeEmail'], message: 'Email address is required' });
+    }
     if (!String(data.year || '').trim()) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['year'], message: 'Year is required' });
     }
@@ -136,6 +139,9 @@ const coreTeamApplicationSchema = recruitmentSubmissionSchema;
 
 const membershipSubmissionSchema = CommonIdentitySchema.merge(MembershipExtrasSchema)
   .superRefine((data, ctx) => {
+    if (!data.collegeEmail && !data.email) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['collegeEmail'], message: 'Email address is required' });
+    }
     if (!data.reason && !data.whyJoin) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['whyJoin'], message: 'Reason is required' });
     }
