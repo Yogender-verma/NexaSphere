@@ -23,14 +23,14 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
                 metadata: { role: 'SuperAdmin' },
                 created_at: new Date().toISOString(),
                 last_seen_at: new Date().toISOString(),
-                expires_at: new Date(Date.now() + 3600000).toISOString()
-              }
+                expires_at: new Date(Date.now() + 3600000).toISOString(),
+              },
             ],
-            rowCount: 1
+            rowCount: 1,
           };
         }
         return { rows: [], rowCount: 1 };
-      }
+      },
     };
     return fn(mockClient);
   });
@@ -49,7 +49,7 @@ test('Push Subscription Validation and Memory Safety', async (t) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer mock-token'
+          Authorization: 'Bearer mock-token',
         },
       };
 
