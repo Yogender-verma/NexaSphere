@@ -11,6 +11,7 @@ import { adminAuditMiddleware, attachOldState } from '../middleware/adminAuditMi
 import { eventsRepository } from '../repositories/eventsRepository.js';
 import { coreTeamService } from '../services/coreTeamService.js';
 import { authRateLimiter, protectedActionRateLimiter } from '../middleware/authRateLimiter.js';
+import { tierRateLimiter } from '../middleware/tierRateLimiter.js';
 import { portfolioRepository } from '../repositories/portfolioRepository.js';
 import { achievementsRepository } from '../repositories/achievementsRepository.js';
 import { portfolioService } from '../services/portfolioService.js';
@@ -43,18 +44,21 @@ router.delete(
 router.get('/api/admin/users', adminAuthMiddleware.requireAdmin, usersController.getAdminUsers);
 router.post(
   '/api/admin/users',
+  tierRateLimiter(),
   adminAuthMiddleware.requireAdmin,
   adminAuditMiddleware,
   usersController.adminCreateUser
 );
 router.put(
   '/api/admin/users/:id',
+  tierRateLimiter(),
   adminAuthMiddleware.requireAdmin,
   adminAuditMiddleware,
   usersController.adminUpdateUser
 );
 router.delete(
   '/api/admin/users/:id',
+  tierRateLimiter(),
   adminAuthMiddleware.requireAdmin,
   adminAuditMiddleware,
   usersController.adminDeactivateUser
