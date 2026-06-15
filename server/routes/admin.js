@@ -193,4 +193,8 @@ router.get('/api/admin/consistency-alerts', adminAuth, (req, res) => {
   res.json(getConsistencyAlerts());
 });
 
+router.get('/api/admin/dependency-report', adminAuth, async (req, res) => {
+  // dependency monitoring report
+});
+
 export default router;

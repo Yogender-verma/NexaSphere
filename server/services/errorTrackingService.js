@@ -274,3 +274,6 @@ function clearErrors() {
 }
 
 export { logError, getErrorStats, getRecentErrors, getEndpointErrors, getUserErrors, clearErrors };
+export const predictServiceFailure = (history) => {
+  // simple prediction logic
+};

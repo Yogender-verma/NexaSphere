@@ -501,4 +501,8 @@ router.get('/failover-status', (req, res) => {
   res.json(getFailoverStatus());
 });
 
+router.get('/dependency-health', async (req, res) => {
+  // return dependency status
+});
+
 export default router;
