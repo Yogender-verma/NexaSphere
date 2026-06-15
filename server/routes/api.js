@@ -14,6 +14,7 @@ import { authRateLimiter, protectedActionRateLimiter } from '../middleware/authR
 import { portfolioRepository } from '../repositories/portfolioRepository.js';
 import { achievementsRepository } from '../repositories/achievementsRepository.js';
 import { portfolioService } from '../services/portfolioService.js';
+import { eventPlanningService } from '../services/eventPlanningService.js';
 
 const router = Router();
 
@@ -41,9 +42,24 @@ router.delete(
 
 // Admin auth
 router.get('/api/admin/users', adminAuthMiddleware.requireAdmin, usersController.getAdminUsers);
-router.post('/api/admin/users', adminAuthMiddleware.requireAdmin, adminAuditMiddleware, usersController.adminCreateUser);
-router.put('/api/admin/users/:id', adminAuthMiddleware.requireAdmin, adminAuditMiddleware, usersController.adminUpdateUser);
-router.delete('/api/admin/users/:id', adminAuthMiddleware.requireAdmin, adminAuditMiddleware, usersController.adminDeactivateUser);
+router.post(
+  '/api/admin/users',
+  adminAuthMiddleware.requireAdmin,
+  adminAuditMiddleware,
+  usersController.adminCreateUser
+);
+router.put(
+  '/api/admin/users/:id',
+  adminAuthMiddleware.requireAdmin,
+  adminAuditMiddleware,
+  usersController.adminUpdateUser
+);
+router.delete(
+  '/api/admin/users/:id',
+  adminAuthMiddleware.requireAdmin,
+  adminAuditMiddleware,
+  usersController.adminDeactivateUser
+);
 router.post('/api/admin/login', authRateLimiter, adminAuthMiddleware.login);
 router.post('/api/admin/logout', adminAuthMiddleware.requireAdmin, adminAuthMiddleware.logout);
 
@@ -187,6 +203,74 @@ router.delete(
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
+  }
+);
+
+// Event planning — content routes (for website)
+router.get('/api/content/events/:eventId/planning', (req, res) => {
+  eventPlanningService.seedDefaultTemplates(req.params.eventId);
+  res.json(eventPlanningService.getPlan(req.params.eventId));
+});
+router.post('/api/content/events/:eventId/planning/tasks', (req, res) => {
+  const task = eventPlanningService.createTask(req.params.eventId, req.body, req.ip);
+  res.status(201).json(task);
+});
+router.put('/api/content/events/:eventId/planning/tasks/:taskId', (req, res) => {
+  const task = eventPlanningService.updateTask(
+    req.params.eventId,
+    req.params.taskId,
+    req.body,
+    req.ip
+  );
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+  res.json(task);
+});
+router.delete('/api/content/events/:eventId/planning/tasks/:taskId', (req, res) => {
+  if (!eventPlanningService.deleteTask(req.params.eventId, req.params.taskId, req.ip))
+    return res.status(404).json({ error: 'Task not found' });
+  res.json({ ok: true });
+});
+router.post('/api/content/events/:eventId/planning/tasks/:taskId/comments', (req, res) => {
+  const comment = eventPlanningService.addComment(
+    req.params.eventId,
+    req.params.taskId,
+    { content: req.body.content },
+    req.ip
+  );
+  if (!comment) return res.status(404).json({ error: 'Task not found' });
+  res.status(201).json(comment);
+});
+
+// Event planning — admin routes
+router.get(
+  '/api/admin/event-planning',
+  adminAuthMiddleware.requireScope('events:read'),
+  (req, res) => {
+    const all = {};
+    const { plans } = eventPlanningService;
+    for (const [eventId, plan] of plans) {
+      all[eventId] = {
+        tasks: Array.from(plan.tasks.values()),
+        budget: plan.budget,
+        activityLog: plan.activityLog.slice(-50),
+      };
+    }
+    res.json({ plans: all });
+  }
+);
+router.put(
+  '/api/admin/event-planning/:eventId/budget',
+  adminAuthMiddleware.requireScope('events:write'),
+  (req, res) => {
+    res.json(eventPlanningService.updateBudget(req.params.eventId, req.body));
+  }
+);
+router.post(
+  '/api/admin/event-planning/:eventId/templates/seed',
+  adminAuthMiddleware.requireScope('events:write'),
+  (req, res) => {
+    eventPlanningService.seedDefaultTemplates(req.params.eventId);
+    res.json({ ok: true });
   }
 );
 

@@ -107,6 +107,12 @@ const links = [
     label: 'Circuit Breaker',
     icon: 'Activity',
   },
+  {
+    to: '/dashboard/event-planning',
+    label: 'Event Plans',
+    icon: 'Calendar',
+    requiredScope: 'events:read',
+  },
 ];
 
 export function Sidebar() {

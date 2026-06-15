@@ -90,6 +90,7 @@ const ActivitiesPage = lazy(() => import('./pages/activities/ActivitiesPage'));
 const ActivityDetailPage = lazy(() => import('./pages/activities/ActivityDetailPage'));
 const EventsPage = lazy(() => import('./pages/events/EventsPage'));
 const EventDetailPage = lazy(() => import('./pages/events/EventDetailPage'));
+const EventPlanningPage = lazy(() => import('./pages/events/EventPlanningPage'));
 const AboutPage = lazy(() => import('./pages/about/AboutPage'));
 const TeamPage = lazy(() => import('./pages/team/TeamPage'));
 const ContactPage = lazy(() => import('./pages/contact/ContactPage'));
@@ -833,6 +834,12 @@ function MainRouter({
               element={<EventDetailWrapper onBack={() => nav('/events')} events={eventsData} />}
             />
 
+            {/* ── Event Planning (collaborative) ── */}
+            <Route
+              path="/events/:eventId/planning"
+              element={<EventPlanningWrapper onBack={() => nav('/events')} />}
+            />
+
             {/* ── Live Streaming ── */}
             <Route
               path="/stream/:eventId"
@@ -1242,6 +1249,15 @@ function WorkspaceWrapper({ onBack }) {
   return (
     <PageIn k={`workspace-${roomId}`}>
       <WorkspacePage roomId={roomId} onBack={onBack} />
+    </PageIn>
+  );
+}
+
+function EventPlanningWrapper({ onBack }) {
+  const { eventId } = useParams();
+  return (
+    <PageIn k={`event-planning-${eventId}`}>
+      <EventPlanningPage event={{ id: eventId, eventId }} onBack={onBack} />
     </PageIn>
   );
 }

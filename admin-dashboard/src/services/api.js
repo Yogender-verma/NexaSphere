@@ -502,6 +502,15 @@ async function fetchWithAuth(url, options = {}) {
           waitlist: [],
         });
       }
+
+      // /api/admin/event-planning
+      else if (url.startsWith('/api/admin/event-planning')) {
+        if (method === 'GET') {
+          resolve({ plans: {} });
+        } else {
+          resolve({ ok: true });
+        }
+      }
     }, 300); // simulate slight network delay
   });
 }
@@ -894,6 +903,16 @@ export const api = {
       }),
   },
 
+  eventPlanning: {
+    list: () => fetchWithAuth('/api/admin/event-planning'),
+    updateBudget: (eventId, budget) =>
+      fetchWithAuth(`/api/admin/event-planning/${eventId}/budget`, {
+        method: 'PUT',
+        body: JSON.stringify(budget),
+      }),
+    seedTemplates: (eventId) =>
+      fetchWithAuth(`/api/admin/event-planning/${eventId}/templates/seed`, { method: 'POST' }),
+  },
   forum: {
     getAll: async (params = {}) => {
       const query = new URLSearchParams(params).toString();
