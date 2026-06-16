@@ -212,6 +212,45 @@ const getDb = (key, defaultVal) => {
       setDb(key, initialTeam);
       return initialTeam;
     }
+    if (key === 'resources') {
+      const initialResources = [
+        {
+          id: '1',
+          title: 'Introduction to Data Structures & Algorithms',
+          description:
+            'A comprehensive guide covering arrays, linked lists, trees, graphs, and sorting algorithms.',
+          fileUrl: '#',
+          fileType: 'application/pdf',
+          fileSize: 2500000,
+          category: 'study_material',
+          tags: ['DSA', 'Python', 'Algorithms'],
+          difficultyLevel: 'beginner',
+          uploadedBy: 'Ayush Sharma',
+          downloads: 342,
+          votes: ['user1', 'user2'],
+          status: 'approved',
+          createdAt: '2026-06-01T10:00:00.000Z',
+        },
+        {
+          id: '2',
+          title: 'Web Dev MERN Template',
+          description: 'Ready-to-use MERN stack project template with auth and CRUD.',
+          fileUrl: '#',
+          fileType: 'application/zip',
+          fileSize: 8500000,
+          category: 'project_template',
+          tags: ['MERN', 'React', 'Node.js'],
+          difficultyLevel: 'intermediate',
+          uploadedBy: 'Tanishk Bansal',
+          downloads: 189,
+          votes: ['user3'],
+          status: 'pending',
+          createdAt: '2026-06-05T08:00:00.000Z',
+        },
+      ];
+      setDb(key, initialResources);
+      return initialResources;
+    }
     if (key === 'announcements') {
       const initialAnnouncements = [
         {
@@ -573,6 +612,28 @@ async function fetchWithAuth(url, options = {}) {
 }
 
 export const api = {
+  resources: {
+    getAll: (params = '') => fetchWithAuth(`/api/admin/resources${params}`),
+    update: async (id, data) => {
+      const result = await fetchWithAuth(`/api/admin/resources/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Resource updated' });
+      return result;
+    },
+    delete: async (id) => {
+      await fetchWithAuth(`/api/admin/resources/${id}`, { method: 'DELETE' });
+      eventEmitter.emit(EVENTS.NOTIFY, { type: 'success', message: 'Resource deleted' });
+    },
+    moderate: async (id, status) => {
+      const result = await fetchWithAuth(`/api/admin/resources/${id}/moderate`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      return result;
+    },
+  },
   mentorship: {
     getAll: async (params = {}) => {
       const query = new URLSearchParams(params).toString();
