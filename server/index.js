@@ -1048,17 +1048,17 @@ app.delete('/api/admin/events/:id', adminAuth, eventsController.adminDeleteEvent
 app.get('/api/streams', streamController.listStreams);
 app.get('/api/streams/event/:eventId', streamController.getStreamByEvent);
 app.get('/api/streams/:id', streamController.getStream);
-app.post('/api/streams', streamController.createStream);
-app.put('/api/streams/:id', streamController.updateStream);
-app.patch('/api/streams/:id/status', streamController.setStreamStatus);
-app.delete('/api/streams/:id', streamController.deleteStream);
+app.post('/api/streams', adminAuth, streamController.createStream);
+app.put('/api/streams/:id', adminAuth, streamController.updateStream);
+app.patch('/api/streams/:id/status', adminAuth, streamController.setStreamStatus);
+app.delete('/api/streams/:id', adminAuth, streamController.deleteStream);
 app.post('/api/streams/:id/chat', streamController.addChatMessage);
 app.get('/api/streams/:id/chat', streamController.listChatMessages);
 app.post('/api/streams/:id/polls', streamController.createPoll);
 app.get('/api/streams/:id/polls', streamController.listPolls);
 app.post('/api/streams/polls/:pollId/vote', streamController.votePoll);
-app.patch('/api/streams/polls/:pollId/close', streamController.closePoll);
-app.patch('/api/streams/chat/:messageId/moderate', streamController.moderateChatMessage);
+app.patch('/api/streams/polls/:pollId/close', adminAuth, streamController.closePoll);
+app.patch('/api/streams/chat/:messageId/moderate', adminAuth, streamController.moderateChatMessage);
 app.get('/api/admin/streams', adminAuth, streamController.adminListAll);
 
 // Public listings
