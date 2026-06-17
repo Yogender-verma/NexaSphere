@@ -60,6 +60,12 @@ const links = [
     icon: 'Users',
     requiredScope: 'settings:admin',
   },
+  {
+    to: '/dashboard/scheduled-tasks',
+    label: 'Scheduled Tasks',
+    icon: 'Clock',
+    requiredScope: 'settings:admin',
+  },
 ];
 
 export function Sidebar() {

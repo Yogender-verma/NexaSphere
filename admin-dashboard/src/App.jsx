@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import { Sidebar } from './components/Sidebar';
 import { Toast } from './components/Toast';
 import { OfflineBanner } from './components/OfflineBanner';
+import ErrorBoundary from './components/ErrorBoundary';
 import { LoginPage } from './pages/LoginPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 import { ForumManager } from './pages/ForumManager';
@@ -46,7 +47,9 @@ function DashboardLayout() {
       <ImpersonationBanner />
       <Sidebar />
       <main className="main-content" id="main-content">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
       <Toast />
     </div>
