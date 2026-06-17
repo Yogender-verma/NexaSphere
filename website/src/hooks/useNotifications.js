@@ -4,7 +4,14 @@ import { buildUrl, getApiBase, getSocketServerUrl } from '../utils/runtimeConfig
 import { StudentAuthContext } from '../context/StudentAuthContext';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('ns_student_token') || localStorage.getItem('ns_admin_token');
+  // Wrapped in try-catch — localStorage.getItem throws SecurityError
+  // in Safari private browsing mode.
+  let token = null;
+  try {
+    token = localStorage.getItem('ns_student_token') || localStorage.getItem('ns_admin_token');
+  } catch {
+    // Storage unavailable — proceed without auth token.
+  }
   return token
     ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
     : { 'Content-Type': 'application/json' };
@@ -29,13 +36,20 @@ export function useNotifications() {
       try {
         let resolvedUserId = userId;
         if (!resolvedUserId) {
-          const storedUser = localStorage.getItem('ns_user');
+          let storedUser = null;
+          try {
+            storedUser = localStorage.getItem('ns_user');
+          } catch {
+            // Storage unavailable — skip stored user lookup.
+          }
           if (storedUser) {
             try {
               const u = JSON.parse(storedUser);
               resolvedUserId = u?.id || u?.userId;
             } catch (e) {
-              console.error('Error parsing stored user info', e);
+              if (import.meta.env.DEV) {
+                console.error('[useNotifications] Error parsing stored user info:', e.message);
+              }
             }
           }
         }
