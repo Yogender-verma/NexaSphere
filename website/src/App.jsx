@@ -112,6 +112,7 @@ const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDash
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
 const SponsorsPage = lazy(() => import('./pages/sponsors/SponsorsPage'));
+const EventBudgetPage = lazy(() => import('./pages/finance/EventBudgetPage'));
 
 const MNH = 88,
   DNH = 64;
@@ -1158,6 +1159,18 @@ function MainRouter({
                 <ErrorBoundary>
                   <PageIn k="status">
                     <StatusPage />
+                  </PageIn>
+                </ErrorBoundary>
+              }
+            />
+
+            {/* ── Event Budget Page ── */}
+            <Route
+              path="/budgets"
+              element={
+                <ErrorBoundary>
+                  <PageIn k="budgets">
+                    <EventBudgetPage />
                   </PageIn>
                 </ErrorBoundary>
               }
