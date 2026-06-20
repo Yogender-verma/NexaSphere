@@ -395,12 +395,17 @@ function MessageCTA() {
   const [message, setMessage] = useState('');
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2200);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
   const handleCopy = () => {
     navigator.clipboard
       .writeText(EMAIL)
       .then(() => {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
       })
       .catch(() => {});
   };
