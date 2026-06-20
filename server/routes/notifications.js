@@ -13,6 +13,7 @@ import notificationsService from '../services/notificationsService.js';
 import { pushSubscriptionsRepository } from '../repositories/pushSubscriptionsRepository.js';
 import { notificationPreferencesRepository } from '../repositories/notificationPreferencesRepository.js';
 import { studentAuthService } from '../services/studentAuthService.js';
+import { notificationSchema } from '../validators/notificationSchemas.js';
 
 const router = Router();
 
@@ -352,6 +353,36 @@ router.get('/notifications', async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+/**
+ * POST /notifications — Create a new notification (admin).
+ * Validates input against notificationSchema using Zod.
+ */
+router.post(
+  '/notifications',
+  adminAuthMiddleware.requireAdmin,
+  notificationRateLimiter,
+  async (req, res) => {
+    try {
+      const validated = notificationSchema.safeParse(req.body);
+      if (!validated.success) {
+        return res.status(400).json({ error: validated.error.errors[0].message });
+      }
+
+      const { userId, title, message, type, link } = validated.data;
+
+      const note = await notificationsService.addNotification(userId || 'global', {
+        title,
+        message,
+        type,
+        link,
+      });
+      return res.json({ success: true, notification: note });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+);
 
 // ── Notification Preferences Routes ─────────────────────────────────────────
 
