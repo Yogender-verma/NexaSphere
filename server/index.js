@@ -32,6 +32,7 @@ import portfolioRouter from './routes/portfolio.js';
 import portfolioExportRouter from './routes/portfolioExport.js';
 import notificationsRouter from './routes/notifications.js';
 import adminRouter from './routes/admin.js';
+import portfolioAnalyticsRouter from './routes/portfolioAnalytics.js';
 import announcementsRouter from './routes/announcements.js';
 import bulkRouter from './routes/bulk.js';
 import { validateEnvironment } from './utils/envValidator.js';
@@ -387,6 +388,7 @@ app.use('/', apiRouter);
 app.use('/', healthRouter);
 app.use('/', coreTeamRouter);
 app.use('/api', formsRouter);
+app.use('/api', portfolioAnalyticsRouter);
 app.use('/api', portfolioRouter);
 app.use('/', notificationsRouter);
 app.use('/api/admin', adminRouter);
@@ -467,10 +469,18 @@ const MAGIC_BYTES = {
   'image/jpeg': [[0xff, 0xd8, 0xff]],
   'image/gif': [[0x47, 0x49, 0x46]],
   'image/webp': [[0x52, 0x49, 0x46, 0x46]],
-  'application/zip': [[0x50, 0x4b, 0x03, 0x04], [0x50, 0x4b, 0x05, 0x06], [0x50, 0x4b, 0x07, 0x08]],
+  'application/zip': [
+    [0x50, 0x4b, 0x03, 0x04],
+    [0x50, 0x4b, 0x05, 0x06],
+    [0x50, 0x4b, 0x07, 0x08],
+  ],
   'application/x-zip-compressed': [[0x50, 0x4b, 0x03, 0x04]],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [[0x50, 0x4b, 0x03, 0x04]],
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': [[0x50, 0x4b, 0x03, 0x04]],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
+    [0x50, 0x4b, 0x03, 0x04],
+  ],
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': [
+    [0x50, 0x4b, 0x03, 0x04],
+  ],
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [[0x50, 0x4b, 0x03, 0x04]],
   'text/plain': [],
   'text/markdown': [],
@@ -748,9 +758,23 @@ async function listEventsStore({ page = 1, limit = 20 } = {}) {
 }
 
 const ALLOWED_EVENT_FIELDS = [
-  'id', 'name', 'description', 'date_text', 'time', 'location',
-  'type', 'mode', 'category', 'tags', 'image_url', 'registration_link',
-  'capacity', 'registered_count', 'price', 'created_at', 'updated_at',
+  'id',
+  'name',
+  'description',
+  'date_text',
+  'time',
+  'location',
+  'type',
+  'mode',
+  'category',
+  'tags',
+  'image_url',
+  'registration_link',
+  'capacity',
+  'registered_count',
+  'price',
+  'created_at',
+  'updated_at',
 ];
 
 function sanitizeEventRecord(event) {
@@ -997,8 +1021,17 @@ async function listCoreTeamStore() {
 }
 
 const ALLOWED_TEAM_MEMBER_FIELDS = [
-  'id', 'name', 'role', 'position', 'bio', 'avatar_url',
-  'github_url', 'linkedin_url', 'email', 'joined_at', 'order',
+  'id',
+  'name',
+  'role',
+  'position',
+  'bio',
+  'avatar_url',
+  'github_url',
+  'linkedin_url',
+  'email',
+  'joined_at',
+  'order',
 ];
 
 function sanitizeCoreTeamMemberRecord(member) {
@@ -1179,7 +1212,11 @@ app.post('/api/auth/logout', studentAuthController.logout);
 app.post('/api/auth/slack-settings', requireStudentAuth, studentAuthController.updateSlackSettings);
 app.get('/api/slack/auth', slackController.startSlackAuth);
 app.get('/api/slack/auth/callback', slackController.slackAuthCallback);
-app.post('/api/slack/commands', express.urlencoded({ extended: true }), slackController.handleSlackCommand);
+app.post(
+  '/api/slack/commands',
+  express.urlencoded({ extended: true }),
+  slackController.handleSlackCommand
+);
 app.get('/api/admin/slack/config', adminAuth, slackController.getSlackConfig);
 app.post('/api/admin/slack/config', adminAuth, slackController.updateSlackConfig);
 app.delete('/api/admin/slack/disconnect', adminAuth, slackController.disconnectSlack);
@@ -1932,7 +1969,7 @@ if (process.env.NODE_ENV !== 'test') {
       server = app.listen(port, () => {
         console.log(`NexaSphere server listening on http://localhost:${port}`);
         schedulerService.init();
-        
+
         // Register Learning Path Nudges (Runs daily)
         schedulerService.schedule('0 10 * * *', async () => {
           await learningPathService.runNudgeJob();
