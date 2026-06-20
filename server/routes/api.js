@@ -14,7 +14,7 @@ import { authRateLimiter, protectedActionRateLimiter } from '../middleware/authR
 import { portfolioRepository } from '../repositories/portfolioRepository.js';
 import { achievementsRepository } from '../repositories/achievementsRepository.js';
 import { portfolioService } from '../services/portfolioService.js';
-import { sponsorshipMarketplaceService } from '../services/sponsorshipMarketplaceService.js';
+import { skillExchangeService } from '../services/skillExchangeService.js';
 
 const router = Router();
 
@@ -290,44 +290,54 @@ router.delete(
   }
 );
 
-// Sponsorship Marketplace
-router.get('/api/content/sponsorship/companies', (req, res) =>
-  res.json({ companies: sponsorshipMarketplaceService.listCompanies(req.query) })
+// Skill Exchange
+router.get('/api/content/skills/listings', (req, res) =>
+  res.json({ listings: skillExchangeService.getListings(req.query) })
 );
-router.post('/api/content/sponsorship/companies', (req, res) =>
-  res.status(201).json(sponsorshipMarketplaceService.createCompany(req.body))
+router.post('/api/content/skills/listings', (req, res) =>
+  res.status(201).json(skillExchangeService.createListing(req.body))
 );
-router.get('/api/content/sponsorship/companies/:id', (req, res) =>
-  res.json(sponsorshipMarketplaceService.getCompany(req.params.id))
+router.get('/api/content/skills/matches/:listingId', (req, res) =>
+  res.json({ matches: skillExchangeService.findMatches(req.params.listingId) })
 );
-router.get('/api/content/sponsorship/packages', (req, res) =>
-  res.json({ packages: sponsorshipMarketplaceService.getPackages() })
+router.post('/api/content/skills/sessions', (req, res) =>
+  res
+    .status(201)
+    .json(
+      skillExchangeService.bookSession(
+        req.body.fromUser,
+        req.body.toUser,
+        req.body.listingId,
+        req.body.scheduledAt
+      )
+    )
 );
-router.get('/api/content/sponsorship/proposals', (req, res) =>
-  res.json({ proposals: sponsorshipMarketplaceService.getProposals(req.query) })
-);
-router.post('/api/content/sponsorship/proposals', (req, res) =>
-  res.status(201).json(sponsorshipMarketplaceService.createProposal(req.body))
-);
-router.put('/api/content/sponsorship/proposals/:id/status', (req, res) => {
-  const result = sponsorshipMarketplaceService.updateProposalStatus(req.params.id, req.body.status);
-  if (!result) return res.status(404).json({ error: 'Proposal not found' });
-  res.json(result);
+router.put('/api/content/skills/sessions/:id', (req, res) => {
+  const session = skillExchangeService.completeSession(req.params.id, req.body.notes);
+  if (!session) return res.status(404).json({ error: 'Session not found' });
+  res.json(session);
 });
-router.get('/api/content/sponsorship/agreements', (req, res) =>
-  res.json({ agreements: sponsorshipMarketplaceService.getAgreements(req.query) })
+router.post('/api/content/skills/sessions/:id/feedback', (req, res) =>
+  res
+    .status(201)
+    .json(
+      skillExchangeService.leaveFeedback(
+        req.params.id,
+        req.body.from,
+        req.body.to,
+        req.body.rating,
+        req.body.comment
+      )
+    )
 );
-router.put('/api/content/sponsorship/agreements/:id/deliverables', (req, res) => {
-  const result = sponsorshipMarketplaceService.updateDeliverable(
-    req.params.id,
-    req.body.item,
-    req.body.done
-  );
-  if (!result) return res.status(404).json({ error: 'Agreement not found' });
-  res.json(result);
-});
-router.get('/api/content/sponsorship/roi/:companyId', (req, res) =>
-  res.json(sponsorshipMarketplaceService.getROI(req.params.companyId))
+router.get('/api/content/skills/sessions/:id/feedback', (req, res) =>
+  res.json({ feedback: skillExchangeService.getFeedback(req.params.id) })
+);
+router.get('/api/content/skills/leaderboard', (req, res) =>
+  res.json({ leaderboard: skillExchangeService.getLeaderboard() })
+);
+router.get('/api/content/skills/users/:user/stats', (req, res) =>
+  res.json(skillExchangeService.getUserStats(req.params.user))
 );
 
 export default router;

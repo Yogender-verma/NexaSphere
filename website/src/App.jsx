@@ -114,9 +114,7 @@ const MentorsPage = lazy(() => import('./pages/mentorship/MentorsPage'));
 const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDashboard'));
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
-const SponsorshipMarketplacePage = lazy(
-  () => import('./pages/monetization/SponsorshipMarketplacePage')
-);
+const SkillExchangePage = lazy(() => import('./pages/skills/SkillExchangePage'));
 
 const MNH = 88,
   DNH = 64;
@@ -625,7 +623,7 @@ function MainRouter({
       '/mentorship': 'Mentorship',
       '/mentorship/mentors': 'Mentorship',
       '/mentorship/dashboard': 'Mentorship',
-      '/sponsorship': 'Sponsorship',
+      '/skill-exchange': 'Skill Exchange',
     };
     const tab = pathMap[location.pathname] || 'Home';
     setActiveTab(tab);
@@ -1193,12 +1191,12 @@ function MainRouter({
               }
             />
 
-            {/* ── Sponsorship Marketplace ── */}
+            {/* ── Skill Exchange ── */}
             <Route
-              path="/sponsorship"
+              path="/skill-exchange"
               element={
-                <PageIn k="sponsorship">
-                  <SponsorshipMarketplacePage />
+                <PageIn k="skill-exchange">
+                  <SkillExchangePage />
                 </PageIn>
               }
             />
