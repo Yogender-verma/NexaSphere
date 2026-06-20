@@ -79,6 +79,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONTENT_FILE = path.join(__dirname, 'data', 'content.json');
 
+const REQUIRED_ENV_VARS = ['CORS_ORIGIN', 'ADMIN_EVENT_PASSWORD'];
+
+function validateEnvironment() {
+  const missing = REQUIRED_ENV_VARS.filter((env) => !process.env[env]);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+
 validateEnvironment();
 
 const app = express();
@@ -523,6 +533,7 @@ function withContentLock(fn) {
   return current.then(() => fn()).finally(() => release());
 }
 
+export async function supabaseRequest(pathname, { method = 'GET', body } = {}) {
 const _rawSupabaseRequest = async function _rawSupabaseRequest(
   pathname,
   { method = 'GET', body } = {}
@@ -1353,6 +1364,186 @@ function clearPasskeyAttempts(username, ip) {
   failedPasskeyAttemptsByIp.delete(ipKey);
   failedPasskeyAttemptsByUsername.delete(userKey);
 }
+
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const userId = req.query.userId || 'global';
+
+    if (userId !== 'global') {
+      let authenticated = false;
+
+      // 1. Try Student Auth
+      let token = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.slice(7).trim();
+      }
+      if (!token && req.cookies?.ns_student_token) {
+        token = req.cookies.ns_student_token;
+      }
+      if (token) {
+        const payload = studentAuthService.verifyToken(token);
+        if (payload && (payload.sub === userId || payload.id === userId)) {
+          authenticated = true;
+        }
+      }
+
+      // 2. Try Admin Auth
+      if (!authenticated) {
+        let adminToken = null;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          adminToken = authHeader.slice(7).trim();
+        }
+        if (!adminToken && req.cookies?.ns_admin_token) {
+          adminToken = req.cookies.ns_admin_token;
+        }
+        if (adminToken) {
+          const { getAdminSession } = await import('./repositories/adminSessionsRepository.js');
+          const session = await getAdminSession(adminToken);
+          if (session) {
+            authenticated = true;
+          }
+        }
+      }
+
+      if (!authenticated) {
+        return res.status(401).json({ error: 'Unauthorized to view these notifications' });
+      }
+    }
+
+    const offset = parseInt(req.query.offset, 10) || 0;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+    const list = await notificationsService.getNotifications(userId, offset, limit);
+    return res.json({ notifications: list });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Notification Preferences
+app.get('/api/notifications/preferences', async (req, res) => {
+  try {
+    const userId = req.query.userId || 'global';
+    const prefs = await notificationPreferencesRepository.list(userId);
+    return res.json({ preferences: prefs });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/notifications/preferences', async (req, res) => {
+  try {
+    const userId = req.body.userId || 'global';
+    const { category, email, push, in_app, sms, frequency, quiet_start, quiet_end, dnd } = req.body;
+    if (!category) return res.status(400).json({ error: 'category is required' });
+    const pref = await notificationPreferencesRepository.set(userId, category, {
+      email,
+      push,
+      in_app,
+      sms,
+      frequency,
+      quiet_start,
+      quiet_end,
+      dnd,
+    });
+    return res.json({ preference: pref });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/notifications/preferences/bulk', async (req, res) => {
+  try {
+    const userId = req.body.userId || 'global';
+    const { preferences } = req.body;
+    if (!Array.isArray(preferences) || !preferences.length) {
+      return res.status(400).json({ error: 'preferences array is required' });
+    }
+    const results = await notificationPreferencesRepository.setBulk(userId, preferences);
+    return res.json({ preferences: results });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Notification analytics (lightweight collector)
+app.post('/api/notifications/analytics', async (req, res) => {
+  try {
+    const event = req.body || {};
+    // Minimal validation — in future route can forward to analytics pipeline
+    console.log('[notification-analytics]', event.type || 'unknown', event);
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/portfolio', portfolioRateLimiter, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+
+    // 1. Validate credentials up front.  Anything below this point
+    //    trusts the username + passkey pair.
+    const credentials = portfolioPutSchema.safeParse({
+      username: body.username,
+      passkey: body.passkey,
+    });
+    if (!credentials.success) {
+      const firstIssue = credentials.error.issues[0];
+      return res.status(400).json({ error: firstIssue?.message || 'Invalid request body' });
+    }
+    const { username, passkey } = credentials.data;
+
+    // 2. Validate the content body.  This rejects XSS payloads such
+    //    as javascript: URLs and unknown protocol schemes before
+    //    the data ever reaches the repository.  The repository
+    //    re-sanitizes as defense-in-depth.
+    const content = portfolioContentSchema.safeParse(body);
+    if (!content.success) {
+      const firstIssue = content.error.issues[0];
+      return res.status(400).json({
+        error:
+          `Invalid portfolio content: ${firstIssue?.path?.join('.') || ''} ${firstIssue?.message || ''}`.trim(),
+      });
+    }
+
+    const existingPortfolio = await portfolioRepository.getByUsername(username);
+    const isNewRegistration = !existingPortfolio;
+
+    const lockout = checkPasskeyLockout(username, ip);
+    if (lockout) {
+      return res.status(429).json({
+        error: 'Too many failed passkey attempts. Please try again later.',
+      });
+    }
+
+    const isAuthorized = await portfolioRepository.verifyPasskey(username, passkey, {
+      allowNew: isNewRegistration,
+    });
+    if (!isAuthorized) {
+      recordFailedPasskeyAttempt(username, ip);
+      return res.status(401).json({ error: 'Incorrect passkey for this username' });
+    }
+
+    clearPasskeyAttempts(username, ip);
+
+    const saved = await portfolioRepository.createOrUpdate({
+      ...content.data,
+      username,
+      passkey,
+    });
+    return res.json({ ok: true, portfolio: saved });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res
+        .status(409)
+        .json({ error: 'Username already exists. Another request may have just created it.' });
+    }
+    console.error('Error saving portfolio:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
 
 // ── Forum / Q&A ──
 app.get('/api/forum/categories', forumController.listCategories);
