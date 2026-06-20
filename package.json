@@ -51,6 +51,7 @@
     "@rolldown/binding-linux-arm64-gnu": "1.0.3",
     "@rolldown/binding-linux-x64-gnu": "1.0.3",
     "@rolldown/binding-linux-x64-musl": "1.0.3",
+    "@rolldown/binding-win32-x64-msvc": "^1.1.1",
     "@rollup/rollup-linux-arm64-gnu": "4.61.1",
     "@rollup/rollup-linux-arm64-musl": "4.60.0",
     "@rollup/rollup-linux-x64-gnu": "4.60.0",
@@ -58,11 +59,10 @@
     "lightningcss-linux-arm64-gnu": "1.32.0",
     "lightningcss-linux-x64-gnu": "1.32.0",
     "lightningcss-linux-x64-musl": "1.32.0",
-    "@rolldown/binding-win32-x64-msvc": "^1.1.1",
     "lightningcss-win32-x64-msvc": "^1.32.0"
   },
   "dependencies": {
-    "@prisma/client": "^5.12.1",
+    "@prisma/client": "^7.8.0",
     "jwt-decode": "^4.0.0",
     "lru-cache": "^11.5.1",
     "next-intl": "^4.13.0"
