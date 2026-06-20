@@ -102,6 +102,7 @@ const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage'));
 const CertificateVerifyPage = lazy(() => import('./pages/certificates/CertificateVerifyPage'));
 const CollabPage = lazy(() => import('./pages/collab/CollabPage'));
 const PortfolioBuilder = lazy(() => import('./components/portfolio/PortfolioBuilder'));
+const PortfolioAnalytics = lazy(() => import('./pages/portfolio/PortfolioAnalytics'));
 const PublicPortfolio = lazy(() => import('./pages/portfolio/PublicPortfolio'));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const AnalyticsPage = lazy(() => import('./pages/analytics/AnalyticsPage'));
@@ -114,10 +115,8 @@ const MentorsPage = lazy(() => import('./pages/mentorship/MentorsPage'));
 const MentorshipDashboard = lazy(() => import('./pages/mentorship/MentorshipDashboard'));
 const StatusPage = lazy(() => import('./pages/StatusPage'));
 const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
-const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage'));
 const NotificationHistoryPage = lazy(() => import('./pages/notifications/NotificationHistoryPage'));
 const SponsorsPage = lazy(() => import('./pages/sponsors/SponsorsPage'));
-const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage'));
 
 const MNH = 88,
   DNH = 64;
@@ -968,6 +967,14 @@ function MainRouter({
                 </ErrorBoundary>
               }
             />
+            <Route
+              path="/p/:username/analytics"
+              element={
+                <ErrorBoundary>
+                  <PortfolioAnalyticsWrapper />
+                </ErrorBoundary>
+              }
+            />
 
             {/* â”€â”€ Collab â”€â”€ */}
             <Route
@@ -1365,6 +1372,14 @@ function PublicPortfolioWrapper({ onBack }) {
   );
 }
 
+function PortfolioAnalyticsWrapper() {
+  const { username } = useParams();
+  return (
+    <PageIn k={`portfolio-analytics-${username}`}>
+      <PortfolioAnalytics username={username} />
+    </PageIn>
+  );
+}
 function CertVerifyWrapper({ onGoHome }) {
   const { certId } = useParams();
   return <CertificateVerifyPage certificateId={certId} onGoHome={onGoHome} />;
