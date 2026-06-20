@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { useSocketSync } from '../../hooks/useSocketSync';
 import { useWorkspaceStore } from '../../store/workspaceStore';
 import { Users, Wifi, WifiOff, RefreshCw, CheckCircle2, ChevronLeft } from 'lucide-react';
@@ -16,16 +16,23 @@ function getOrCreateAnonUser() {
   const STORAGE_KEY = 'ns_workspace_anon_user';
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        ...parsed,
+        initials: parsed.name.substring(0, 2).toUpperCase(),
+      };
+    }
   } catch {
     // sessionStorage unavailable (private browsing) — fall through to create
   }
   const id = Math.floor(Math.random() * 9000) + 1000;
   const hue = Math.floor(Math.random() * 360);
+  const name = `User-${id}`;
   const user = {
-    name: `User-${id}`,
+    name,
     color: `hsl(${hue}, 70%, 50%)`,
-    initials: `U${String(id).slice(-1)}`,
+    initials: name.substring(0, 2).toUpperCase(),
   };
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
@@ -44,11 +51,6 @@ export default function WorkspacePage({ roomId, onBack }: WorkspacePageProps) {
   const { documentContent, users, status } = useWorkspaceStore();
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Generate initials safely
-    user.initials = user.name.substring(0, 2).toUpperCase();
-  }, [user]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;

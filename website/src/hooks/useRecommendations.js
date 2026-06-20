@@ -1,6 +1,7 @@
 // src/hooks/useRecommendations.js
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { userInterestTracker } from '../services/recommendation/userInterestTracker';
+import { recommendationEngine } from '../services/recommendation/recommendationEngine';
 import axios from 'axios'; // Assuming axios is installed for API calls
 
 export function useRecommendations(events) {
@@ -51,9 +52,9 @@ export function useRecommendations(events) {
   const trackEvent = useCallback(
     (eventId, action, metadata) => {
       userInterestTracker.trackEventInteraction(eventId, action, metadata);
-      generateRecommendations();
+      fetchRecommendationsFromBackend();
     },
-    [generateRecommendations]
+    [fetchRecommendationsFromBackend]
     // Ideally, this interaction should be sent to the backend for the ML model's feedback loop.
     // Example: axios.post(`${import.meta.env.VITE_API_BASE}/user-interactions`, { userId: '101', eventId, action, metadata });
   );
@@ -65,8 +66,6 @@ export function useRecommendations(events) {
       if (similarEvents[event.id]) {
         return similarEvents[event.id];
       }
-      // Dynamically import recommendationEngine if it's still needed for client-side similar events
-      const { recommendationEngine } = require('../services/recommendation/recommendationEngine');
       const similar = recommendationEngine.getSimilarEvents(event, eventsRef.current, limit); // Still uses client-side engine for similarity
       setSimilarEvents((prev) => ({ ...prev, [event.id]: similar }));
       return similar;
