@@ -187,27 +187,11 @@ const TASK_DEFINITIONS = [
     enabled: true,
   },
   {
-    id: 'hourly-digest-flush',
-    name: 'Hourly Notification Digest',
-    description: 'Batches and sends hourly notification summaries',
-    cron: '0 * * * *',
-    category: 'notifications',
-    enabled: true,
-  },
-  {
-    id: 'daily-digest-flush',
-    name: 'Daily Notification Digest',
-    description: 'Batches and sends daily notification summaries at 8 AM',
-    cron: '0 8 * * *',
-    category: 'notifications',
-    enabled: true,
-  },
-  {
-    id: 'quiet-hours-flush',
-    name: 'Quiet Hours Recovery',
-    description: 'Flushes notifications queued during quiet hours',
-    cron: '*/15 * * * *',
-    category: 'notifications',
+    id: 'announcement-publisher',
+    name: 'Scheduled Announcement Publisher',
+    description: 'Publishes scheduled announcements when their scheduled time has arrived',
+    cron: '*/1 * * * *', // Run every minute
+    category: 'system',
     enabled: true,
   },
 ];
@@ -342,14 +326,8 @@ class SchedulerService extends EventEmitter {
         console.log('[SchedulerService] Processing overdue task notifications...');
         // logic to fetch tasks with dueDate < now and status != 'Done' and notify assignees
         break;
-      case 'hourly-digest-flush':
-        await notificationsService.processDigests('hourly_digest');
-        break;
-      case 'daily-digest-flush':
-        await notificationsService.processDigests('daily_digest');
-        break;
-      case 'quiet-hours-flush':
-        await notificationsService.flushQueuedNotifications();
+      case 'announcement-publisher':
+        await this._publishScheduledAnnouncements();
         break;
       default:
         throw new Error(`No implementation for task "${task.id}"`);
@@ -508,6 +486,32 @@ class SchedulerService extends EventEmitter {
         `[Scheduler] Analytics snapshot: ${totalUsers[0]?.count || 0} users, ${totalEvents[0]?.count || 0} events`
       );
     });
+  }
+
+  async _publishScheduledAnnouncements() {
+    logger.info('[Scheduler] Checking for scheduled announcements to publish...');
+    if (!HAS_SUPABASE) {
+      logger.info('[Scheduler] No database configured, skipping scheduled announcement publishing');
+      return;
+    }
+    try {
+      const { announcementsRepository } =
+        await import('../repositories/announcementsRepository.js');
+      const { default: eventManager } = await import('./eventEmitterService.js');
+      const published = await announcementsRepository.publishScheduled();
+      if (published && published.length > 0) {
+        logger.info(`[Scheduler] Published ${published.length} scheduled announcements.`);
+        for (const ann of published) {
+          eventManager.emit('admin-announcement', {
+            title: ann.title,
+            message: ann.content,
+            link: ann.ctaUrl,
+          });
+        }
+      }
+    } catch (err) {
+      logger.error('[Scheduler] Error publishing scheduled announcements:', err.message);
+    }
   }
 
   // ── Public API ───────────────────────────────────────────────────────────────

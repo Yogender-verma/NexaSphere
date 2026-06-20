@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import http from 'node:http';
+import jwt from 'jsonwebtoken';
 import { setWithDbOverride } from '../repositories/db.js';
 
 process.env.NODE_ENV = 'test';
@@ -132,8 +133,19 @@ test('Offline-First Sync and Compression Verification', async (t) => {
         ],
       };
 
+      const testToken = jwt.sign(
+        {
+          sub: 'student-test-id',
+          email: 'student@example.com',
+          name: 'Test Student',
+          role: 'student',
+          scopes: ['events:write', 'events:read'],
+        },
+        process.env.JWT_SECRET
+      );
+
       const res = await sendRequest('POST', '/api/sync/batch', batchPayload, {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${testToken}`,
       });
       assert.equal(res.status, 409); // Conflict status
       assert.equal(res.body.results[0].status, 'conflict');
@@ -163,8 +175,19 @@ test('Offline-First Sync and Compression Verification', async (t) => {
         ],
       };
 
+      const testToken = jwt.sign(
+        {
+          sub: 'student-test-id',
+          email: 'student@example.com',
+          name: 'Test Student',
+          role: 'student',
+          scopes: ['events:write', 'events:read'],
+        },
+        process.env.JWT_SECRET
+      );
+
       const res = await sendRequest('POST', '/api/sync/batch', batchPayload, {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${testToken}`,
       });
       assert.equal(res.status, 200);
       assert.equal(res.body.results[0].status, 'success');

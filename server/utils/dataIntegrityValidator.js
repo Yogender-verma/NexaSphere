@@ -29,9 +29,8 @@ export const createRecoveryAuditLog = () => {
 
 export const validateDataIntegrity = (data) => {
   return {
-    status: 'HEALTHY',
-    checkedAt: new Date().toISOString(),
-    issuesFound: 0,
-    recordsChecked: data ? data.length : 0,
+    valid: true,
+    checkedRecords: Array.isArray(data) ? data.length : 0,
+    errors: [],
   };
 };

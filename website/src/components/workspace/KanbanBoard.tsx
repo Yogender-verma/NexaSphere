@@ -762,7 +762,6 @@ export default function KanbanBoard({
               >
                 <div className="w-48 font-semibold text-sm truncate">{task.title}</div>
                 <div className="flex-1 h-2 bg-white/5 rounded-full relative">
-                  {/* Visualizing task duration based on dates if available */}
                   <div
                     className="absolute h-full bg-blue-500 rounded-full"
                     style={{
