@@ -114,7 +114,7 @@ const LiveStreamPage = lazy(() => import('./pages/streaming/LiveStreamPage'));
 const ResourcesPage = lazy(() => import('./pages/resources/ResourcesPage'));
 const NotificationHistoryPage = lazy(() => import('./pages/notifications/NotificationHistoryPage'));
 const SponsorsPage = lazy(() => import('./pages/sponsors/SponsorsPage'));
-const SystemHealthPage = lazy(() => import('./pages/monitoring/SystemHealthPage'));
+const EmailCampaignsPage = lazy(() => import('./pages/email-campaigns/EmailCampaignsPage'));
 
 const MNH = 88,
   DNH = 64;
@@ -1129,6 +1129,18 @@ function MainRouter({
                 <ErrorBoundary>
                   <PageIn k="admin">
                     <AdminPage onBack={onBackHome} />
+                  </PageIn>
+                </ErrorBoundary>
+              }
+            />
+
+            {/* ── Email Campaigns ── */}
+            <Route
+              path="/email-campaigns"
+              element={
+                <ErrorBoundary>
+                  <PageIn k="email-campaigns">
+                    <EmailCampaignsPage />
                   </PageIn>
                 </ErrorBoundary>
               }

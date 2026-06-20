@@ -1,265 +1,176 @@
 import { financialService } from '../services/financialService.js';
 
-function sanitizeUser(user) {
-  if (!user) return null;
-  return { id: user.id, email: user.email, name: user.name || null, role: user.role || 'student' };
+function wrapAsync(fn) {
+  return (req, res) =>
+    Promise.resolve(fn(req, res)).catch((e) => {
+      let status = 500;
+      const msg = e.message || '';
+
+      if (msg.includes('Forbidden') || msg.includes('permission')) {
+        status = 403;
+      } else if (msg.includes('Authentication') || msg.includes('authorized')) {
+        status = 401;
+      } else if (msg.includes('not found')) {
+        status = 404;
+      } else if (msg.includes('invalid') || msg.includes('required')) {
+        status = 400;
+      }
+
+      res.status(status).json({ error: msg || 'Internal server error' });
+    });
 }
 
-export const financialController = {
-  async createBudget(req, res) {
-    try {
-      const budget = await financialService.createBudget(req.body, sanitizeUser(req.user));
-      res.status(201).json({ success: true, data: budget });
-    } catch (err) {
-      const status = err.message.includes('Forbidden')
-        ? 403
-        : err.message.includes('Authentication')
-          ? 401
-          : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+// --- Budgets ---
+export const createBudget = wrapAsync(async (req, res) => {
+  const { eventId, name, totalAmount, startDate, endDate, categoryAllocations } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: 'Budget name is required' });
+  }
 
-  async getBudgets(req, res) {
-    try {
-      const budgets = await financialService.getBudgets(sanitizeUser(req.user));
-      res.json({ success: true, data: budgets });
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 500;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+  const budget = await financialService.createBudget(
+    { eventId, name, totalAmount, startDate, endDate, categoryAllocations },
+    req.studentUser
+  );
+  return res.status(201).json(budget);
+});
 
-  async getBudgetById(req, res) {
-    try {
-      const budget = await financialService.getBudgetById(
-        req.params.budgetId,
-        sanitizeUser(req.user)
-      );
-      if (!budget) return res.status(404).json({ success: false, error: 'Budget not found' });
-      res.json({ success: true, data: budget });
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 500;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const getBudgets = wrapAsync(async (req, res) => {
+  const budgets = await financialService.getBudgets(req.studentUser);
+  return res.status(200).json({ budgets });
+});
 
-  async updateBudget(req, res) {
-    try {
-      const budget = await financialService.updateBudget(
-        req.params.budgetId,
-        req.body,
-        sanitizeUser(req.user)
-      );
-      if (!budget) return res.status(404).json({ success: false, error: 'Budget not found' });
-      res.json({ success: true, data: budget });
-    } catch (err) {
-      const status = err.message.includes('Forbidden')
-        ? 403
-        : err.message.includes('not found')
-          ? 404
-          : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const getBudgetById = wrapAsync(async (req, res) => {
+  const { id } = req.params;
+  const budget = await financialService.getBudgetById(id, req.studentUser);
+  return res.status(200).json(budget);
+});
 
-  async deleteBudget(req, res) {
-    try {
-      await financialService.deleteBudget(req.params.budgetId, sanitizeUser(req.user));
-      res.json({ success: true, message: 'Budget deleted successfully' });
-    } catch (err) {
-      const status = err.message.includes('Forbidden')
-        ? 403
-        : err.message.includes('not found')
-          ? 404
-          : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const updateBudget = wrapAsync(async (req, res) => {
+  const { id } = req.params;
+  const updated = await financialService.updateBudget(id, req.body, req.studentUser);
+  return res.status(200).json(updated);
+});
 
-  async cloneBudget(req, res) {
-    try {
-      const budget = await financialService.cloneBudget(
-        req.params.budgetId,
-        req.body.eventId,
-        sanitizeUser(req.user)
-      );
-      res.status(201).json({ success: true, data: budget });
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const deleteBudget = wrapAsync(async (req, res) => {
+  const { id } = req.params;
+  const success = await financialService.deleteBudget(id, req.studentUser);
+  return res.status(200).json({ success });
+});
 
-  async getExpenses(req, res) {
-    try {
-      const expenses = await financialService.getExpenses(
-        req.params.budgetId,
-        sanitizeUser(req.user)
-      );
-      res.json({ success: true, data: expenses });
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 500;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const cloneBudget = wrapAsync(async (req, res) => {
+  const { id } = req.params;
+  const { newEventId } = req.body;
+  if (!newEventId) {
+    return res.status(400).json({ error: 'newEventId is required to clone a budget' });
+  }
+  const cloned = await financialService.cloneBudget(id, newEventId, req.studentUser);
+  return res.status(201).json(cloned);
+});
 
-  async createExpense(req, res) {
-    try {
-      const expense = await financialService.createExpense(
-        { ...req.body, budgetId: req.params.budgetId },
-        sanitizeUser(req.user)
-      );
-      res.status(201).json({ success: true, data: expense });
-    } catch (err) {
-      const status = err.message.includes('Forbidden')
-        ? 403
-        : err.message.includes('Authentication')
-          ? 401
-          : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+// --- Expenses ---
+export const createExpense = wrapAsync(async (req, res) => {
+  const { budgetId, eventId, name, amount, category, receiptUrl } = req.body;
+  if (!name || amount === undefined || !category) {
+    return res.status(400).json({ error: 'Name, amount, and category are required' });
+  }
 
-  async updateExpense(req, res) {
-    try {
-      const expense = await financialService.updateExpense(
-        req.params.expenseId,
-        req.body,
-        sanitizeUser(req.user)
-      );
-      if (!expense) return res.status(404).json({ success: false, error: 'Expense not found' });
-      res.json({ success: true, data: expense });
-    } catch (err) {
-      const status = err.message.includes('Forbidden')
-        ? 403
-        : err.message.includes('not found')
-          ? 404
-          : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+  const expense = await financialService.createExpense(
+    { budgetId, eventId, name, amount, category, receiptUrl },
+    req.studentUser
+  );
+  return res.status(201).json(expense);
+});
 
-  async deleteExpense(req, res) {
-    try {
-      await financialService.deleteExpense(req.params.expenseId, sanitizeUser(req.user));
-      res.json({ success: true, message: 'Expense deleted successfully' });
-    } catch (err) {
-      const status = err.message.includes('Forbidden')
-        ? 403
-        : err.message.includes('not found')
-          ? 404
-          : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const getExpenses = wrapAsync(async (req, res) => {
+  const { budgetId } = req.query;
+  if (!budgetId) {
+    return res.status(400).json({ error: 'budgetId is required as query param' });
+  }
+  const expenses = await financialService.getExpenses(budgetId, req.studentUser);
+  return res.status(200).json({ expenses });
+});
 
-  async getRevenues(req, res) {
-    try {
-      const revenues = await financialService.getRevenues(
-        req.params.budgetId,
-        sanitizeUser(req.user)
-      );
-      res.json({ success: true, data: revenues });
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 500;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const updateExpense = wrapAsync(async (req, res) => {
+  const { id } = req.params;
+  const updated = await financialService.updateExpense(id, req.body, req.studentUser);
+  return res.status(200).json(updated);
+});
 
-  async createRevenue(req, res) {
-    try {
-      const revenue = await financialService.createRevenue(
-        { ...req.body, budgetId: req.params.budgetId },
-        sanitizeUser(req.user)
-      );
-      res.status(201).json({ success: true, data: revenue });
-    } catch (err) {
-      const status = err.message.includes('Forbidden')
-        ? 403
-        : err.message.includes('Authentication')
-          ? 401
-          : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const deleteExpense = wrapAsync(async (req, res) => {
+  const { id } = req.params;
+  const success = await financialService.deleteExpense(id, req.studentUser);
+  return res.status(200).json({ success });
+});
 
-  async deleteRevenue(req, res) {
-    try {
-      await financialService.deleteRevenue(req.params.revenueId, sanitizeUser(req.user));
-      res.json({ success: true, message: 'Revenue entry deleted successfully' });
-    } catch (err) {
-      const status = err.message.includes('Forbidden')
-        ? 403
-        : err.message.includes('not found')
-          ? 404
-          : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+// --- Revenue ---
+export const createRevenue = wrapAsync(async (req, res) => {
+  const { budgetId, eventId, source, amount, description, receivedAt } = req.body;
+  if (!source || amount === undefined) {
+    return res.status(400).json({ error: 'Source and amount are required' });
+  }
 
-  async getBudgetVariance(req, res) {
-    try {
-      const variance = await financialService.getBudgetVariance(
-        req.params.budgetId,
-        sanitizeUser(req.user)
-      );
-      res.json({ success: true, data: variance });
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 500;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+  const revenue = await financialService.createRevenue(
+    { budgetId, eventId, source, amount, description, receivedAt },
+    req.studentUser
+  );
+  return res.status(201).json(revenue);
+});
 
-  async getIncomeStatement(req, res) {
-    try {
-      const statement = await financialService.getIncomeStatement(
-        req.params.budgetId,
-        sanitizeUser(req.user)
-      );
-      res.json({ success: true, data: statement });
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 500;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const getRevenues = wrapAsync(async (req, res) => {
+  const { budgetId } = req.query;
+  if (!budgetId) {
+    return res.status(400).json({ error: 'budgetId is required as query param' });
+  }
+  const revenues = await financialService.getRevenues(budgetId, req.studentUser);
+  return res.status(200).json({ revenues });
+});
 
-  async getBudgetsUtilizationReport(req, res) {
-    try {
-      const report = await financialService.getBudgetsUtilizationReport(sanitizeUser(req.user));
-      res.json({ success: true, data: report });
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 500;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
+export const deleteRevenue = wrapAsync(async (req, res) => {
+  const { id } = req.params;
+  const success = await financialService.deleteRevenue(id, req.studentUser);
+  return res.status(200).json({ success });
+});
 
-  async exportReport(req, res) {
-    try {
-      const format = req.query.format || 'json';
-      const report = await financialService.exportReport(
-        req.params.budgetId,
-        format,
-        sanitizeUser(req.user)
-      );
-      if (format.toLowerCase() === 'json') {
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="report-${req.params.budgetId}.json"`
-        );
-        res.send(report);
-      } else if (format.toLowerCase() === 'csv') {
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="report-${req.params.budgetId}.csv"`
-        );
-        res.send(report);
-      }
-    } catch (err) {
-      const status = err.message.includes('Forbidden') ? 403 : 400;
-      res.status(status).json({ success: false, error: err.message });
-    }
-  },
-};
+// --- Reports & Calculations ---
+export const getBudgetVariance = wrapAsync(async (req, res) => {
+  const { id } = req.params; // budgetId
+  const report = await financialService.getBudgetVariance(id, req.studentUser);
+  return res.status(200).json(report);
+});
+
+export const getIncomeStatement = wrapAsync(async (req, res) => {
+  const { id } = req.params; // budgetId
+  const report = await financialService.getIncomeStatement(id, req.studentUser);
+  return res.status(200).json(report);
+});
+
+export const getCashFlowStatement = wrapAsync(async (req, res) => {
+  const { id } = req.params; // budgetId
+  const report = await financialService.getCashFlowStatement(id, req.studentUser);
+  return res.status(200).json(report);
+});
+
+export const getBudgetsUtilizationReport = wrapAsync(async (req, res) => {
+  const report = await financialService.getBudgetsUtilizationReport(req.studentUser);
+  return res.status(200).json({ budgets: report });
+});
+
+export const getYearOverYearComparison = wrapAsync(async (req, res) => {
+  const report = await financialService.getYearOverYearComparison(req.studentUser);
+  return res.status(200).json({ comparison: report });
+});
+
+export const exportReport = wrapAsync(async (req, res) => {
+  const { id } = req.params; // budgetId
+  const { format = 'csv' } = req.query;
+
+  const result = await financialService.exportReport(id, format, req.studentUser);
+
+  if (format === 'csv') {
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=budget_${id}_report.csv`);
+    return res.status(200).send(result);
+  }
+
+  return res.status(200).json(JSON.parse(result));
+});

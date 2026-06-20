@@ -27,7 +27,7 @@ import portfolioRouter from './routes/portfolio.js';
 import portfolioExportRouter from './routes/portfolioExport.js';
 import notificationsRouter from './routes/notifications.js';
 import adminRouter from './routes/admin.js';
-import financialRouter from './routes/financial.js';
+import financialsRouter from './routes/financials.js';
 import { validateEnvironment } from './utils/envValidator.js';
 import { performanceMonitor } from './middleware/performanceMonitor.js';
 import { enhancedTracingMiddleware } from './middleware/enhancedTracingMiddleware.js';
@@ -81,7 +81,7 @@ import multer from 'multer';
 import * as resourcesController from './controllers/resourcesController.js';
 import * as backupController from './controllers/backupController.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
-import moderationRouter from './routes/moderation.js';
+import emailCampaignsRouter from './routes/emailCampaigns.js';
 import { schedulerService } from './services/schedulerService.js';
 import dynamicPricingRouter from './routes/dynamicPricing.js';
 
@@ -343,7 +343,8 @@ app.use('/api', notificationsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api', moderationRouter);
 app.use('/', syncRouter);
-app.use('/api/pricing', dynamicPricingRouter);
+app.use('/api', financialsRouter);
+app.use('/api', emailCampaignsRouter);
 
 const adminAuth = [apiRateLimiter, adminAuthMiddleware.requireAdmin];
 

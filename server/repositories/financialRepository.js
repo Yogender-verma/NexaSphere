@@ -67,11 +67,13 @@ function mapAuditRow(row) {
 }
 
 export const financialRepository = {
+  // --- Budgets ---
   async createBudget(budget) {
     return withDb(async (client) => {
       const { rows } = await client.query(
         `INSERT INTO event_budgets (event_id, name, total_amount, start_date, end_date, category_allocations, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
         [
           budget.eventId || null,
           budget.name,
@@ -89,7 +91,18 @@ export const financialRepository = {
   async getBudgetById(id) {
     return withDb(async (client) => {
       const { rows } = await client.query('SELECT * FROM event_budgets WHERE id = $1', [id]);
-      return rows.length ? mapBudgetRow(rows[0]) : null;
+      if (!rows.length) return null;
+      return mapBudgetRow(rows[0]);
+    });
+  },
+
+  async getBudgetByEventId(eventId) {
+    return withDb(async (client) => {
+      const { rows } = await client.query('SELECT * FROM event_budgets WHERE event_id = $1', [
+        eventId,
+      ]);
+      if (!rows.length) return null;
+      return mapBudgetRow(rows[0]);
     });
   },
 
@@ -110,7 +123,8 @@ export const financialRepository = {
            end_date = COALESCE($5, end_date),
            category_allocations = COALESCE($6, category_allocations),
            updated_at = NOW()
-         WHERE id = $1 RETURNING *`,
+         WHERE id = $1
+         RETURNING *`,
         [
           id,
           patch.name ?? null,
@@ -120,7 +134,8 @@ export const financialRepository = {
           patch.categoryAllocations ? JSON.stringify(patch.categoryAllocations) : null,
         ]
       );
-      return rows.length ? mapBudgetRow(rows[0]) : null;
+      if (!rows.length) return null;
+      return mapBudgetRow(rows[0]);
     });
   },
 
@@ -131,11 +146,13 @@ export const financialRepository = {
     });
   },
 
+  // --- Expenses ---
   async createExpense(expense) {
     return withDb(async (client) => {
       const { rows } = await client.query(
         `INSERT INTO expenses (budget_id, event_id, name, amount, category, receipt_url, status, submitted_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
         [
           expense.budgetId || null,
           expense.eventId || null,
@@ -154,7 +171,8 @@ export const financialRepository = {
   async getExpenseById(id) {
     return withDb(async (client) => {
       const { rows } = await client.query('SELECT * FROM expenses WHERE id = $1', [id]);
-      return rows.length ? mapExpenseRow(rows[0]) : null;
+      if (!rows.length) return null;
+      return mapExpenseRow(rows[0]);
     });
   },
 
@@ -163,6 +181,16 @@ export const financialRepository = {
       const { rows } = await client.query(
         'SELECT * FROM expenses WHERE budget_id = $1 ORDER BY created_at DESC',
         [budgetId]
+      );
+      return rows.map(mapExpenseRow);
+    });
+  },
+
+  async getExpensesByEventId(eventId) {
+    return withDb(async (client) => {
+      const { rows } = await client.query(
+        'SELECT * FROM expenses WHERE event_id = $1 ORDER BY created_at DESC',
+        [eventId]
       );
       return rows.map(mapExpenseRow);
     });
@@ -179,7 +207,8 @@ export const financialRepository = {
            status = COALESCE($6, status),
            approved_by = COALESCE($7, approved_by),
            updated_at = NOW()
-         WHERE id = $1 RETURNING *`,
+         WHERE id = $1
+         RETURNING *`,
         [
           id,
           patch.name ?? null,
@@ -190,7 +219,8 @@ export const financialRepository = {
           patch.approvedBy ?? null,
         ]
       );
-      return rows.length ? mapExpenseRow(rows[0]) : null;
+      if (!rows.length) return null;
+      return mapExpenseRow(rows[0]);
     });
   },
 
@@ -201,11 +231,13 @@ export const financialRepository = {
     });
   },
 
+  // --- Revenue ---
   async createRevenue(revenue) {
     return withDb(async (client) => {
       const { rows } = await client.query(
         `INSERT INTO revenue_entries (budget_id, event_id, source, amount, description, received_at, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
         [
           revenue.budgetId || null,
           revenue.eventId || null,
@@ -223,7 +255,8 @@ export const financialRepository = {
   async getRevenueById(id) {
     return withDb(async (client) => {
       const { rows } = await client.query('SELECT * FROM revenue_entries WHERE id = $1', [id]);
-      return rows.length ? mapRevenueRow(rows[0]) : null;
+      if (!rows.length) return null;
+      return mapRevenueRow(rows[0]);
     });
   },
 
@@ -237,6 +270,16 @@ export const financialRepository = {
     });
   },
 
+  async getRevenuesByEventId(eventId) {
+    return withDb(async (client) => {
+      const { rows } = await client.query(
+        'SELECT * FROM revenue_entries WHERE event_id = $1 ORDER BY received_at DESC',
+        [eventId]
+      );
+      return rows.map(mapRevenueRow);
+    });
+  },
+
   async deleteRevenue(id) {
     return withDb(async (client) => {
       const { rowCount } = await client.query('DELETE FROM revenue_entries WHERE id = $1', [id]);
@@ -244,11 +287,13 @@ export const financialRepository = {
     });
   },
 
+  // --- Audit Trail ---
   async insertAuditLog(log) {
     return withDb(async (client) => {
       const { rows } = await client.query(
         `INSERT INTO financial_audit_trail (action, record_type, record_id, user_id, changes)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
         [log.action, log.recordType, log.recordId, log.userId, JSON.stringify(log.changes || {})]
       );
       return mapAuditRow(rows[0]);
