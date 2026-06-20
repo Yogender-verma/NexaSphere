@@ -205,7 +205,7 @@ export default function PortfolioBuilder() {
         // On shared networks (campus WiFi) this is exhausted quickly.
         const resetHeader = response.headers.get('X-RateLimit-Reset');
         const resetTime = resetHeader
-          ? new Date(parseInt(resetHeader) * 1000).toLocaleTimeString()
+          ? new Date(parseInt(resetHeader, 10) * 1000).toLocaleTimeString()
           : 'soon';
         setGhError(
           `GitHub rate limit reached. Too many requests from this network. Please try again after ${resetTime}.`
