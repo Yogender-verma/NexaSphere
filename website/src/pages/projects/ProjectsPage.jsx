@@ -218,7 +218,7 @@ export default function ProjectsPage({ onBack }) {
                   </h4>
                   <div className="project-team-list">
                     {selectedProject.team.map((member, idx) => (
-                      <div key={idx} className="team-member">
+                      <div key={member.name} className="team-member">
                         <SafeImage
                           src={member.photo}
                           alt={member.name}
