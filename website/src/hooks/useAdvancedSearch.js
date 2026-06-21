@@ -33,6 +33,7 @@ export const useAdvancedSearch = () => {
 
       setLoading(true);
       try {
+        // Build query string with facets
         const filterParams = new URLSearchParams({
           q: searchQuery,
           ...filters,
@@ -45,6 +46,7 @@ export const useAdvancedSearch = () => {
         setFacets(data.facets);
         if (data.suggestions) setSuggestions([data.suggestions]);
 
+        // Update recent searches if results found
         if (data.results.length > 0) {
           updateRecentSearches(searchQuery);
         }
@@ -67,7 +69,7 @@ export const useAdvancedSearch = () => {
 
     setRecentSearches((prev) => {
       const filtered = prev.filter((item) => item !== q);
-      const updated = [q, ...filtered].slice(0, 5);
+      const updated = [q, ...filtered].slice(0, 5); // Kept the incoming 5-item clamp limit
       
       try {
         localStorage.setItem('recent_searches', JSON.stringify(updated));
