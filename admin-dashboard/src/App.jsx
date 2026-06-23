@@ -11,7 +11,7 @@ import { MentorshipManager } from './pages/MentorshipManager';
 import { DashboardHome } from './pages/DashboardHome';
 import { EventsManager } from './pages/EventsManager';
 import { ActivityEventsManager } from './pages/ActivityEventsManager';
-import ScheduledTasksManager from './pages/ScheduledTasksManager';
+import { ScheduledTasksManager } from './pages/ScheduledTasksManager';
 import UserGroups from './pages/UserGroups';
 import { CoreTeamManager } from './pages/CoreTeamManager';
 import { MembershipResponsesManager } from './pages/MembershipResponsesManager';

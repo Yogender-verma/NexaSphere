@@ -25,6 +25,9 @@ import healthRouter from './routes/health.js';
 import coreTeamRouter from './routes/coreTeam.js';
 import formsRouter from './routes/forms.js';
 import portfolioRouter from './routes/portfolio.js';
+import healthDashboardRouter from './routes/healthDashboard.js';
+import complianceRouter from './routes/compliance.js';
+import { logEvent } from './controllers/analyticsController.js';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
@@ -251,6 +254,9 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
       if (origin && allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -305,7 +311,6 @@ app.use('/api', apiRateLimiter);
 app.use('/api', tierRateLimiter());
 
 // Mount route modules
-app.use('/api/form-submissions', formSubmissionsRouter);
 app.post('/api/analytics/track', logEvent);
 app.use('/api/monitoring', monitoringRouter);
 app.use('/api/health-dashboard', healthDashboardRouter);
@@ -316,7 +321,7 @@ app.use('/', coreTeamRouter);
 app.use('/api', formsRouter);
 app.use('/api', portfolioRouter);
 app.use('/api', userGroupsRouter);
-app.use('/', notificationsRouter);
+app.use('/api', notificationsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api', learningPathRouter);
 app.use('/', syncRouter);

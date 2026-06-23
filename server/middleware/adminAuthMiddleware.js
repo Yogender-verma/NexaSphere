@@ -386,14 +386,17 @@ async function login(req, res) {
     }
 
     const usernameHash = crypto.createHash('sha256').update(u).digest();
-    const adminUsernameHash = crypto.createHash('sha256').update(ADMIN_USERNAME).digest();
     const passwordHash = crypto.createHash('sha256').update(p).digest();
-    const adminPasswordHash = crypto.createHash('sha256').update(ADMIN_PASSWORD).digest();
 
-    const isUsernameValid = crypto.timingSafeEqual(usernameHash, adminUsernameHash);
-    const isPasswordValid = crypto.timingSafeEqual(passwordHash, adminPasswordHash);
+    const matchedUser = adminUsers.find((user) => {
+      const uHash = crypto.createHash('sha256').update(user.username).digest();
+      const pHash = crypto.createHash('sha256').update(user.password).digest();
+      return (
+        crypto.timingSafeEqual(usernameHash, uHash) && crypto.timingSafeEqual(passwordHash, pHash)
+      );
+    });
 
-    if (!isUsernameValid || !isPasswordValid) {
+    if (!matchedUser) {
       await recordLoginAttempt(ip);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -444,13 +447,9 @@ async function login(req, res) {
       suspicious,
     });
 
-    // RECTIFIED: Hardcode secure attribute and explicitly scope path to root
-    res.cookie('ns_admin_token', session.token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      path: '/',
-      expires: new Date(session.expiresAt),
+    return res.status(200).json({
+      requiresTwoFactor: true,
+      challengeToken,
     });
   } catch (error) {
     console.error('[Admin Login] Failed before 2FA challenge:', error);
