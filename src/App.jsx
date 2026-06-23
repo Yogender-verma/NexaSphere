@@ -24,6 +24,7 @@ import Chatbot from './shared/Chatbot';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import GamificationDashboard from './components/gamification/GamificationDashboard';
 import RecommendationWidget from './components/recommendation/RecommendationWidget';
+import SettingsPage from './pages/settings/SettingsPage';
 
 import {
   AmbientOrbs,
@@ -145,6 +146,7 @@ export default function App() {
             onTabChange={handleTabChange}
             onToggleTheme={toggleTheme}
             theme={theme}
+            onSettings={actions.openSettings}
           />
         </>
       )}
@@ -242,6 +244,12 @@ export default function App() {
           {page?.type === 'gamification' && (
             <PageIn k="pg-gamification">
               <GamificationDashboard />
+            </PageIn>
+          )}
+
+          {page?.type === 'settings' && (
+            <PageIn k="pg-settings">
+              <SettingsPage onBack={actions.onBackHome} />
             </PageIn>
           )}
 

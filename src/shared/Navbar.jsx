@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe } from 'lucide-react';
+import { Moon, Sun, Settings } from 'lucide-react';
 import { BRAND_LOGO_FULL, BRAND_LOGO_ICON } from './brandAssets';
 
 const TABS = [
@@ -66,21 +66,15 @@ function ThemeToggle({ theme, onToggle }) {
   );
 }
 
-function LanguageToggle() {
-  const { i18n } = useTranslation();
-  const currentLang = i18n.language ? i18n.language.split('-')[0] : 'en';
-
-  const toggleLanguage = () => {
-    const nextLang = currentLang === 'en' ? 'hi' : 'en';
-    i18n.changeLanguage(nextLang);
-  };
+function SettingsToggle({ onSettings }) {
+  const { t } = useTranslation();
 
   return (
     <button
       className="ns-lang-toggle"
-      onClick={toggleLanguage}
-      aria-label={`Switch to ${currentLang === 'en' ? 'Hindi' : 'English'}`}
-      title={`Switch to ${currentLang === 'en' ? 'Hindi' : 'English'}`}
+      onClick={onSettings}
+      aria-label={t('settings')}
+      title={t('settings')}
       style={{
         background: 'var(--card)',
         border: '1px solid var(--bdr)',
@@ -106,13 +100,21 @@ function LanguageToggle() {
         e.currentTarget.style.color = 'var(--t2)';
       }}
     >
-      <Globe size={14} aria-hidden="true" />
-      <span>{currentLang.toUpperCase()}</span>
+      <Settings size={14} aria-hidden="true" />
+      <span>{t('settings', 'Settings')}</span>
     </button>
   );
 }
 
-export default function Navbar({ activeTab, onTabChange, onToggleTheme, theme, onApply, onJoin }) {
+export default function Navbar({
+  activeTab,
+  onTabChange,
+  onToggleTheme,
+  theme,
+  onApply,
+  onJoin,
+  onSettings,
+}) {
   const { t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
   const [mobile, setMobile] = useState(window.innerWidth <= 768);
@@ -161,7 +163,7 @@ export default function Navbar({ activeTab, onTabChange, onToggleTheme, theme, o
           </div>
 
           <div className="ns-mobile-top-actions">
-            <LanguageToggle />
+            <SettingsToggle onSettings={onSettings} />
             <ThemeToggle theme={theme} onToggle={onToggleTheme} />
             <button
               className="ns-mobile-menu-toggle"
@@ -313,7 +315,7 @@ export default function Navbar({ activeTab, onTabChange, onToggleTheme, theme, o
               {t('nav.apply')}
             </button>
           </div>
-          <LanguageToggle />
+          <SettingsToggle onSettings={onSettings} />
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
         </div>
       </div>
