@@ -30,7 +30,7 @@ export function eventMatchesQuery(event, query) {
   );
 }
 
-export function useSearch(activities, events) {
+export function useEventSearch(activities, events) {
   const apiBase = getApiBase();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');

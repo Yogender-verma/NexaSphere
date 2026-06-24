@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eventMatchesQuery, getEventDisplayTitle } from '../hooks/useSearch';
+import { eventMatchesQuery, getEventDisplayTitle } from '../hooks/useEventSearch';
 
 describe('useSearch event helpers', () => {
   const event = {

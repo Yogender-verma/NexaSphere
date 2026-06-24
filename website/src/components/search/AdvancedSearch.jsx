@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAdvancedSearch } from '../../hooks/useAdvancedSearch';
+import { useGlobalSearch } from '../../hooks/useGlobalSearch';
 import {
   Search,
   Filter,
@@ -36,7 +36,7 @@ const AdvancedSearch = () => {
     suggestions,
     recentSearches,
     saveSearch,
-  } = useAdvancedSearch();
+  } = useGlobalSearch();
 
   const [sortBy, setSortBy] = useState('relevance');
 

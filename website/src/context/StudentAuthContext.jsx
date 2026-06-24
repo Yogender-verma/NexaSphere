@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import apiClient from '../utils/apiClient';
 import { useTheme } from '../hooks/useTheme';
 
-
 export const StudentAuthContext = createContext(null);
 
 const TOKEN_KEY = 'ns_student_token';

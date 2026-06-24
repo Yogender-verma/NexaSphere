@@ -11,12 +11,12 @@ type SocketEventCallback<T extends unknown[] = any[]> = (...args: T) => void;
 /**
  * Hook to strictly manage socket event listeners to prevent memory leaks
  */
-export function useSocket<T extends unknown[] = unknown[]>(
+export function useSocketEvent<T extends unknown[] = unknown[]>(
   event: string,
   callback: SocketEventCallback<T>
 ) {
   const { socket } = useSocketContext();
-  const savedCallback = useRef<SocketEventCallback<T>>();
+  const savedCallback = useRef<SocketEventCallback<T> | undefined>(undefined);
   // Remember the latest callback
   useEffect(() => {
     savedCallback.current = callback;

@@ -10,7 +10,10 @@ function mapRow(row) {
     status: row.status,
     icon: row.icon,
     tags: Array.isArray(row.tags) ? row.tags : (row.tags ?? []),
-    restrictedGroups: typeof row.restricted_groups === 'string' ? JSON.parse(row.restricted_groups) : (row.restricted_groups ?? []),
+    restrictedGroups:
+      typeof row.restricted_groups === 'string'
+        ? JSON.parse(row.restricted_groups)
+        : (row.restricted_groups ?? []),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -29,23 +32,31 @@ export const eventsRepository = {
 
         if (studentGroups === undefined) {
           // If no groups provided, only show public events
-          conditions.push(`(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb)`);
+          conditions.push(
+            `(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb)`
+          );
         } else {
           // Show public events OR events where restricted_groups overlaps with studentGroups
-          const groupArray = studentGroups.length ? studentGroups.map(id => `'${id}'`).join(',') : "'-1'"; // -1 to match nothing
-          conditions.push(`(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(restricted_groups) AS g WHERE g IN (${groupArray})))`);
+          const groupArray = studentGroups.length
+            ? studentGroups.map((id) => `'${id}'`).join(',')
+            : "'-1'"; // -1 to match nothing
+          conditions.push(
+            `(restricted_groups IS NULL OR jsonb_array_length(restricted_groups) = 0 OR restricted_groups = '[]'::jsonb OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(restricted_groups) AS g WHERE g IN (${groupArray})))`
+          );
         }
 
         if (conditions.length > 0) {
           query += ' where ' + conditions.join(' and ');
         }
-        
+
         query += ` order by created_at desc limit $1 offset $2`;
         params.push(limit, offset);
 
         const { rows } = await client.query(query, params);
 
-        const countQuery = 'select count(*)::int as total from events ' + (conditions.length > 0 ? ' where ' + conditions.join(' and ') : '');
+        const countQuery =
+          'select count(*)::int as total from events ' +
+          (conditions.length > 0 ? ' where ' + conditions.join(' and ') : '');
         const countResult = await client.query(countQuery);
 
         const total = countResult.rows[0]?.total ?? 0;

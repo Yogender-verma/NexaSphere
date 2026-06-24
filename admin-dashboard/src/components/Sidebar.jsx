@@ -86,6 +86,28 @@ const links = [
     icon: 'MessageSquare',
     requiredScope: 'events:read',
   },
+  {
+<<<<<<< HEAD
+    to: '/dashboard/tasks',
+=======
+    to: '/dashboard/audit-logs',
+    label: 'Audit Logs',
+    icon: 'FileText',
+    requiredScope: 'settings:admin',
+  },
+  {
+    to: '/dashboard/scheduled-tasks',
+>>>>>>> 4bee21df (feat(audit-log): add sidebar nav, route, and API wiring for audit log viewer)
+    label: 'Scheduled Tasks',
+    icon: 'Clock',
+    requiredScope: 'settings:admin',
+  },
+  {
+    to: '/dashboard/backups',
+    label: 'Backups / Restore',
+    icon: 'Database',
+    requiredScope: 'settings:admin',
+  },
 ];
 
 export function Sidebar() {
@@ -256,7 +278,11 @@ export function Sidebar() {
               >
                 <AdminIcon name={icon} size={16} aria-hidden="true" />
                 {label}
-                <AdminIcon name="ExternalLink" size={12} style={{ marginLeft: 'auto', opacity: 0.5 }} />
+                <AdminIcon
+                  name="ExternalLink"
+                  size={12}
+                  style={{ marginLeft: 'auto', opacity: 0.5 }}
+                />
               </a>
             ) : (
               <NavLink

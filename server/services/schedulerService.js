@@ -730,6 +730,18 @@ class SchedulerService extends EventEmitter {
     };
   }
 
+  // ── Public API ───────────────────────────────────────────────────────────────
+
+  /** Shutdown scheduler and clear all active timers. */
+  shutdown() {
+    for (const handle of this._timers.values()) {
+      clearTimeout(handle);
+    }
+    this._timers.clear();
+    this._tasks.clear();
+    this._initialized = false;
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
   _snapshot(task) {

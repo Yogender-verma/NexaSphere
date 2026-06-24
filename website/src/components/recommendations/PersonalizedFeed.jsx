@@ -1,6 +1,7 @@
 /**
  * PersonalizedFeed
  * Shows a "For You" AI-recommended list of events scored by useRecommendations.
+ * Moved from components/recommendation/ (singular) → components/recommendations/ (canonical)
  */
 export default function PersonalizedFeed({ events = [], loading = false, onEventClick }) {
   if (loading) {

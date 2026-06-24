@@ -1,3 +1,4 @@
+import AuditLogViewer from './pages/dashboard/AuditLogViewer';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { Sidebar } from './components/Sidebar';
@@ -11,7 +12,7 @@ import { MentorshipManager } from './pages/MentorshipManager';
 import { DashboardHome } from './pages/DashboardHome';
 import { EventsManager } from './pages/EventsManager';
 import { ActivityEventsManager } from './pages/ActivityEventsManager';
-import ScheduledTasksManager from './pages/ScheduledTasksManager';
+import { ScheduledTasksManager } from './pages/ScheduledTasksManager';
 import UserGroups from './pages/UserGroups';
 import { CoreTeamManager } from './pages/CoreTeamManager';
 import { MembershipResponsesManager } from './pages/MembershipResponsesManager';
@@ -24,6 +25,8 @@ import { CircuitBreakerManager } from './pages/CircuitBreakerManager';
 import { WaitingRoomManager } from './pages/WaitingRoomManager';
 import { ComprehensiveAnalytics } from './pages/ComprehensiveAnalytics';
 import { FunnelAnalysis } from './pages/FunnelAnalysis';
+import { BackupsManager } from './pages/BackupsManager';
+import { ImpersonationBanner } from './components/ImpersonationBanner';
 import './styles/admin.css';
 
 function RequireAuth() {
@@ -82,8 +85,15 @@ export default function App() {
             <Route path="/dashboard/mentorship" element={<MentorshipManager />} />
             <Route path="/dashboard/streams" element={<StreamManager />} />
             <Route path="/dashboard/circuit-breaker" element={<CircuitBreakerManager />} />
+<<<<<<< HEAD
             <Route path="/dashboard/waiting-room" element={<WaitingRoomManager />} />
             <Route path="/dashboard/groups" element={<UserGroups />} />
+            <Route path="/dashboard/tasks" element={<ScheduledTasksManager />} />
+            <Route path="/dashboard/backups" element={<BackupsManager />} />
+=======
+            <Route path="/dashboard/sponsorships" element={<SponsorshipsManager />} />
+            <Route path="/dashboard/audit-logs" element={<AuditLogViewer />} />
+>>>>>>> 4bee21df (feat(audit-log): add sidebar nav, route, and API wiring for audit log viewer)
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,24 +1,39 @@
 import { useState, useEffect, useMemo } from 'react';
-import debounce from 'lodash/debounce';
+import { STORAGE_KEYS } from '../utils/storageKeys.js';
+
+/**
+ * Lightweight native debounce — replaces lodash/debounce to remove the
+ * unlisted transitive dependency on lodash.
+ */
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
 
 /**
  * Hook for managing advanced search state and API interaction
  */
-export const useAdvancedSearch = () => {
+export const useGlobalSearch = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [facets, setFacets] = useState({});
   const [activeFilters, setActiveFilters] = useState({});
   const [suggestions, setSuggestions] = useState([]);
-  
+
   // Safe lazy initializer protecting against malformed JSON crashes
   const [recentSearches, setRecentSearches] = useState(() => {
     try {
-      const storedData = localStorage.getItem('recent_searches');
+      const storedData = localStorage.getItem(STORAGE_KEYS.RECENT_SEARCHES);
       return storedData ? JSON.parse(storedData) : [];
     } catch (err) {
-      console.error('Failed to parse malformed JSON payload from recent_searches storage stream:', err);
+      console.error(
+        'Failed to parse malformed JSON payload from recent_searches storage stream:',
+        err
+      );
       return [];
     }
   });
@@ -71,13 +86,13 @@ export const useAdvancedSearch = () => {
     setRecentSearches((prev) => {
       const filtered = prev.filter((item) => item !== q);
       const updated = [q, ...filtered].slice(0, 5); // Kept the incoming 5-item clamp limit
-      
+
       try {
-        localStorage.setItem('recent_searches', JSON.stringify(updated));
+        localStorage.setItem(STORAGE_KEYS.RECENT_SEARCHES, JSON.stringify(updated));
       } catch (err) {
         console.error('Failed to commit search telemetry update back to local disk storage:', err);
       }
-      
+
       return updated;
     });
   };
@@ -97,9 +112,9 @@ export const useAdvancedSearch = () => {
 
   // Error safety expanded to include saved_searches parser
   const saveSearch = () => {
-    let saved = [];
+    let saved;
     try {
-      const storedSaved = localStorage.getItem('saved_searches');
+      const storedSaved = localStorage.getItem(STORAGE_KEYS.SAVED_SEARCHES);
       saved = storedSaved ? JSON.parse(storedSaved) : [];
     } catch (err) {
       console.error('Failed to parse saved searches payload:', err);
@@ -110,7 +125,7 @@ export const useAdvancedSearch = () => {
     const updatedSaved = [...saved, newSave];
 
     try {
-      localStorage.setItem('saved_searches', JSON.stringify(updatedSaved));
+      localStorage.setItem(STORAGE_KEYS.SAVED_SEARCHES, JSON.stringify(updatedSaved));
     } catch (err) {
       console.error('Failed to save search settings payload profile:', err);
     }
@@ -131,4 +146,4 @@ export const useAdvancedSearch = () => {
   };
 };
 
-export default useAdvancedSearch;
+export default useGlobalSearch;
