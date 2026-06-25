@@ -8,11 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       paths:
-        description: "Paths to invalidate (space-separated, default: /*)"
+        description: 'Paths to invalidate (space-separated, default: /*)'
         required: false
-        default: "/*"
+        default: '/*'
       measure_performance:
-        description: "Run performance measurement after invalidation"
+        description: 'Run performance measurement after invalidation'
         type: boolean
         required: false
         default: true

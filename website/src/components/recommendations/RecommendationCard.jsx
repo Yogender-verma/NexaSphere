@@ -13,7 +13,7 @@ export default function RecommendationCard({ project, match }) {
       </div>
       <div className="recommendation-card-body">
         <p className="project-card-desc">{project.shortDesc}</p>
-        
+
         {/* Match Chips */}
         <div className="match-chips">
           {match.matchChips.map((chip, idx) => (

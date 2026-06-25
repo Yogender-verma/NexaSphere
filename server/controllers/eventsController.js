@@ -28,11 +28,14 @@ const ALLOWED_EVENT_STATUSES = ['upcoming', 'ongoing', 'completed', 'cancelled']
 export const listEvents = wrapAsync(async (req, res) => {
   const { page, limit } = parsePagination(req.query);
   const status = ALLOWED_EVENT_STATUSES.includes(req.query.status) ? req.query.status : undefined;
-  
+
   let studentGroups = undefined;
   const authHeader = req.headers.authorization;
-  let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (req.cookies?.ns_student_token || null);
-  
+  let token =
+    authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : req.cookies?.ns_student_token || null;
+
   if (token) {
     // Import dynamically to avoid top-level circular dependencies if any
     const { studentAuthService } = await import('../services/studentAuthService.js');

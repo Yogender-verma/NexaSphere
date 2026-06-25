@@ -1,7 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
 import { createRateLimitStore } from '../services/rateLimitService.js';
-import { apiSecurityManager } from "../utils/apiSecurityManager.js";
+import { apiSecurityManager } from '../utils/apiSecurityManager.js';
 import { calculateRiskScore } from '../utils/threatDetection.js';
 
 const suspiciousIPs = new Map();
@@ -128,8 +128,8 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: true,
   handler: createLimiterHandler(
-    "Authentication rate limit exceeded",
-    "Too many login attempts, please try again after a minute."
+    'Authentication rate limit exceeded',
+    'Too many login attempts, please try again after a minute.'
   ),
 });
 
@@ -140,8 +140,8 @@ export const notificationRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: true,
   handler: createLimiterHandler(
-    "Notification mutation rate limit exceeded",
-    "Too many notification requests, please try again later."
+    'Notification mutation rate limit exceeded',
+    'Too many notification requests, please try again later.'
   ),
 });
 
@@ -196,8 +196,8 @@ export const portfolioRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: true,
   handler: createLimiterHandler(
-    "Portfolio update rate limit exceeded",
-    "Too many portfolio update attempts from this IP, please try again after 15 minutes."
+    'Portfolio update rate limit exceeded',
+    'Too many portfolio update attempts from this IP, please try again after 15 minutes.'
   ),
 });
 

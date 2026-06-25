@@ -70,9 +70,8 @@ const pendingTwoFactorSetups = new Map();
 const pendingTwoFactorChallenges = new Map();
 const PENDING_2FA_TTL_MS = 10 * 60 * 1000;
 
-// RECTIFIED: Use a global Redis connection instance instead of an isolated local Map pool
+// RECTIFIED: Use getRedisClient dynamically and support local Map fallback when Redis is offline or not configured
 // (Ensure your project has a centralized redis configuration client available)
-import { redisClient } from '../config/redis.js';
 
 function requiredEnv(name) {
   const value = String(process.env[name] || '').trim();
@@ -113,15 +112,29 @@ function getClientIp(req) {
 async function recordLoginAttempt(ip) {
   const key = `login_attempts:${ip}`;
   try {
-    const current = await redisClient.get(key);
-    const attempts = current ? parseInt(current, 10) : 0;
-    
-    // Set counter with exact millisecond-based sliding window expiration
-    await redisClient.set(key, attempts + 1, {
-      PX: LOGIN_WINDOW_MS
-    });
-    
-    return { attempts: attempts + 1 };
+    const client = getRedisClient();
+    if (client) {
+      const current = await client.get(key);
+      const attempts = current ? parseInt(current, 10) : 0;
+
+      // Set counter with exact millisecond-based sliding window expiration
+      await client.set(key, attempts + 1, {
+        PX: LOGIN_WINDOW_MS,
+      });
+
+      return { attempts: attempts + 1 };
+    }
+
+    // Fallback to local map if Redis is not available
+    const now = Date.now();
+    const existing = loginAttemptsByIp.get(ip);
+    const attempts = existing && existing.expiresAt > now ? existing.attempts : 0;
+    const entry = {
+      attempts: attempts + 1,
+      expiresAt: now + LOGIN_WINDOW_MS,
+    };
+    loginAttemptsByIp.set(ip, entry);
+    return entry;
   } catch (err) {
     console.error('[Redis Error] Failed to record login attempt:', err.message);
     return { attempts: 1 };
@@ -131,9 +144,20 @@ async function recordLoginAttempt(ip) {
 async function getLoginAttemptState(ip) {
   const key = `login_attempts:${ip}`;
   try {
-    const attempts = await redisClient.get(key);
-    if (!attempts) return null;
-    return { attempts: parseInt(attempts, 10) };
+    const client = getRedisClient();
+    if (client) {
+      const attempts = await client.get(key);
+      if (!attempts) return null;
+      return { attempts: parseInt(attempts, 10) };
+    }
+
+    const state = loginAttemptsByIp.get(ip);
+    if (!state) return null;
+    if (state.expiresAt <= Date.now()) {
+      loginAttemptsByIp.delete(ip);
+      return null;
+    }
+    return state;
   } catch (err) {
     console.error('[Redis Error] Failed to fetch login attempt state:', err.message);
     return null;
@@ -143,7 +167,11 @@ async function getLoginAttemptState(ip) {
 async function clearLoginAttempts(ip) {
   const key = `login_attempts:${ip}`;
   try {
-    await redisClient.del(key);
+    const client = getRedisClient();
+    if (client) {
+      await client.del(key);
+    }
+    loginAttemptsByIp.delete(ip);
   } catch (err) {
     console.error('[Redis Error] Failed to clear login attempts:', err.message);
   }
@@ -192,7 +220,7 @@ async function markTotpUsed(username, code) {
     const isSet = await redis.set(redisKey, '1', 'EX', 90, 'NX');
     return isSet === null;
   }
-  
+
   const key = `${username}:${cleanCode}`;
   const now = Date.now();
   for (const [k, exp] of usedTotpCodes.entries()) {
@@ -358,14 +386,17 @@ async function login(req, res) {
     }
 
     const usernameHash = crypto.createHash('sha256').update(u).digest();
-    const adminUsernameHash = crypto.createHash('sha256').update(ADMIN_USERNAME).digest();
     const passwordHash = crypto.createHash('sha256').update(p).digest();
-    const adminPasswordHash = crypto.createHash('sha256').update(ADMIN_PASSWORD).digest();
 
-    const isUsernameValid = crypto.timingSafeEqual(usernameHash, adminUsernameHash);
-    const isPasswordValid = crypto.timingSafeEqual(passwordHash, adminPasswordHash);
+    const matchedUser = adminUsers.find((user) => {
+      const uHash = crypto.createHash('sha256').update(user.username).digest();
+      const pHash = crypto.createHash('sha256').update(user.password).digest();
+      return (
+        crypto.timingSafeEqual(usernameHash, uHash) && crypto.timingSafeEqual(passwordHash, pHash)
+      );
+    });
 
-    if (!isUsernameValid || !isPasswordValid) {
+    if (!matchedUser) {
       await recordLoginAttempt(ip);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -416,13 +447,9 @@ async function login(req, res) {
       suspicious,
     });
 
-    // RECTIFIED: Hardcode secure attribute and explicitly scope path to root
-    res.cookie('ns_admin_token', session.token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      path: '/',
-      expires: new Date(session.expiresAt),
+    return res.status(200).json({
+      requiresTwoFactor: true,
+      challengeToken,
     });
   } catch (error) {
     console.error('[Admin Login] Failed before 2FA challenge:', error);
@@ -680,7 +707,7 @@ export const requirePermission = (permission) => {
 
     if (!permissions.includes(permission)) {
       return res.status(403).json({
-        error: "Permission denied",
+        error: 'Permission denied',
       });
     }
 

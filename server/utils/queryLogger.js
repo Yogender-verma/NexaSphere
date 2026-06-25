@@ -78,7 +78,7 @@ export function getQueryPatterns() {
 export function getSlowQueryAnalysis() {
   const patterns = getQueryPatterns();
   const totalQueries = patterns.reduce((sum, p) => sum + p.count, 0);
-  const slowQueries = patterns.filter(p => p.avgDurationMs >= SLOW_QUERY_THRESHOLD_MS);
+  const slowQueries = patterns.filter((p) => p.avgDurationMs >= SLOW_QUERY_THRESHOLD_MS);
   return {
     totalQueries,
     slowQueryCount: slowQueries.length,
