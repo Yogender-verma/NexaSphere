@@ -28,14 +28,15 @@
     "test": "npm run test --workspace=website",
     "test:admin": "npm run test --workspace=admin-dashboard",
     "test:server": "cd server && npm test",
-    "lint": "eslint website/src --ext .js,.jsx",
-    "lint:fix": "eslint website/src --ext .js,.jsx --fix",
+    "lint": "eslint website/src",
+    "lint:fix": "eslint website/src --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "echo 'No TypeScript in this project' && exit 0",
     "prepare": "node -e \"try { require('husky'); require('child_process').execSync('husky', {stdio:'inherit'}) } catch(e) { console.log('husky not available, skipping') }\""
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "concurrently": "^10.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.6",

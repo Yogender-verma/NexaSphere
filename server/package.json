@@ -14,7 +14,8 @@
     "migrate:reset": "node-pg-migrate -f .postgres_migrations_config.json reset",
     "migrate:create": "node-pg-migrate -f .postgres_migrations_config.json create",
     "db:validate": "node scripts/validate-database.js",
-    "audit:sql": "node scripts/audit-sql.js"
+    "audit:sql": "node scripts/audit-sql.js",
+    "postinstall": "npx prisma generate --schema=../prisma/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",
