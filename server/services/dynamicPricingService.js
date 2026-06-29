@@ -97,21 +97,30 @@ export const dynamicPricingService = {
    * Create or update pricing configuration for an event.
    */
   async upsertPricing(eventId, { basePrice, minPrice, maxPrice, capacity, eventDate }) {
-    const { price, reasons } = computeDynamicPrice({
+    const existing = await prisma.eventPricing.findUnique({ where: { eventId } });
+    const hasOverride = existing?.adminOverride != null;
+
+    const { price: algoPrice, reasons } = computeDynamicPrice({
       basePrice,
       minPrice,
       maxPrice,
       capacity,
-      registrations: 0,
+      registrations: existing?.registrations || 0,
       eventDate: new Date(eventDate),
     });
+
+    const finalPrice = hasOverride ? existing.adminOverride : algoPrice;
+    if (hasOverride) {
+      reasons.length = 0;
+      reasons.push('admin_override');
+    }
 
     const pricing = await prisma.eventPricing.upsert({
       where: { eventId },
       create: {
         eventId,
         basePrice,
-        currentPrice: price,
+        currentPrice: finalPrice,
         minPrice,
         maxPrice,
         capacity,
@@ -123,14 +132,14 @@ export const dynamicPricingService = {
         maxPrice,
         capacity,
         eventDate: new Date(eventDate),
-        currentPrice: price,
+        currentPrice: finalPrice,
       },
     });
 
     await prisma.priceHistory.create({
       data: {
         pricingId: pricing.id,
-        price,
+        price: finalPrice,
         reason: reasons.join(','),
       },
     });
@@ -249,16 +258,23 @@ export const dynamicPricingService = {
     if (!pricing) return null;
 
     const previousPrice = pricing.priceHistory?.[1]?.price ?? pricing.basePrice;
+    const hasOverride = pricing.adminOverride != null;
 
-    const { price: futurePrice } = computeDynamicPrice({
-      basePrice: pricing.basePrice,
-      minPrice: pricing.minPrice,
-      maxPrice: pricing.maxPrice,
-      capacity: pricing.capacity,
-      registrations: pricing.registrations,
-      eventDate: pricing.eventDate,
-      now: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days in future
-    });
+    let futurePrice;
+    if (hasOverride) {
+      futurePrice = pricing.adminOverride;
+    } else {
+      const { price } = computeDynamicPrice({
+        basePrice: pricing.basePrice,
+        minPrice: pricing.minPrice,
+        maxPrice: pricing.maxPrice,
+        capacity: pricing.capacity,
+        registrations: pricing.registrations,
+        eventDate: pricing.eventDate,
+        now: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days in future
+      });
+      futurePrice = price;
+    }
 
     const reasons = pricing.priceHistory?.[0]?.reason?.split(',') ?? [];
 
