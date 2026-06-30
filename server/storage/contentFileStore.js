@@ -1,8 +1,9 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import { Mutex } from 'async-mutex';
-
+import { HAS_SUPABASE } from './supabaseClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,14 +39,22 @@ export async function ensureContentFile() {
 }
 
 export async function readContent() {
+  if (HAS_SUPABASE) {
+    console.warn('DEPRECATION WARNING: File-based storage operations are being executed despite HAS_SUPABASE being active. File-based storage is deprecated when Supabase is enabled.');
+  }
   await ensureContentFile();
   const raw = await fs.readFile(CONTENT_FILE, 'utf8');
   return JSON.parse(raw || '{}');
 }
 
 export async function writeContent(content) {
+  if (HAS_SUPABASE) {
+    console.warn('DEPRECATION WARNING: File-based storage operations are being executed despite HAS_SUPABASE being active. File-based storage is deprecated when Supabase is enabled.');
+  }
   await ensureContentFile();
-  await fs.writeFile(CONTENT_FILE, JSON.stringify(content, null, 2), 'utf8');
+  const tempPath = `${CONTENT_FILE}.${crypto.randomUUID()}.tmp`;
+  await fs.writeFile(tempPath, JSON.stringify(content, null, 2), 'utf8');
+  await fs.rename(tempPath, CONTENT_FILE);
 }
 
 const fileMutex = new Mutex();
