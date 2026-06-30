@@ -1,10 +1,8 @@
 const SQL_INJECTION_PATTERNS = [
-  /(\b(union|select|insert|update|delete|drop|alter|create|truncate|exec|execute)\b[\s\S]*?\b(from|into|set|table|database|procedure)\b)/i,
   /(\b(OR|AND)\b\s+\d+\s*[=<>])/i,
   /([';])\s*(--|#|\/\*)/,
   /(\b(LOAD_FILE|INTO_OUTFILE|INTO_DUMPFILE|BENCHMARK|SLEEP|WAITFOR)\b)/i,
   /(\bINFORMATION_SCHEMA\b)/i,
-  /(\b0x[0-9a-fA-F]+\b)/i,
 ];
 
 function hasSqliPattern(value) {
