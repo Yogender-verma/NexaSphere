@@ -1,4 +1,4 @@
-import PlatformSettings from './pages/dashboard/PlatformSettings';
+import RateLimitMonitor from './pages/dashboard/RateLimitMonitor';
 import AuditLogViewer from './pages/dashboard/AuditLogViewer';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
