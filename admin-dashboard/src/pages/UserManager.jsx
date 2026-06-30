@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import UserTimelineModal from '../components/UserTimelineModal';
 
 const ROLES = ['member', 'moderator', 'admin'];
 
@@ -16,6 +17,9 @@ export default function UserManager() {
     icon: 'Award',
   });
   const [editUser, setEditUser] = useState(null);
+  const [timelineUser, setTimelineUser] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(null);
   const [form, setForm] = useState({
     username: '',
     display_name: '',
@@ -291,6 +295,7 @@ export default function UserManager() {
                 >
                   Award Badge
                 </button>
+                <button onClick={() => setTimelineUser(user)}>Activity</button>
               </td>
             </tr>
           ))}
@@ -364,109 +369,8 @@ export default function UserManager() {
         </div>
       )}
 
-      {showImportModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: '#fff',
-              padding: '24px',
-              borderRadius: '8px',
-              minWidth: '500px',
-              maxWidth: '800px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3>Batch Import Users</h3>
-              <button onClick={() => {
-                setShowImportModal(false);
-                setImportPreview(null);
-                setCsvText('');
-                setImportJobId(null);
-                setImportProgress(null);
-                setImportErrors([]);
-              }}>X</button>
-            </div>
-
-            {!importJobId && (
-              <>
-                <div>
-                  <button onClick={downloadCsvTemplate} style={{ marginBottom: '8px' }}>
-                    Download CSV Template
-                  </button>
-                  <br />
-                  <label>
-                    <strong>Upload CSV: </strong>
-                    <input type="file" accept=".csv" onChange={handleFileSelected} />
-                  </label>
-                </div>
-
-                {importPreview && (
-                  <div>
-                    <h4>Preview</h4>
-                    <p>Valid Rows: {importPreview.preview?.length || 0}</p>
-                    <p>Invalid Rows: {importPreview.errors?.length || 0}</p>
-                    {importPreview.errors?.length > 0 && (
-                      <div style={{ color: 'red', fontSize: '14px' }}>
-                        <ul>
-                          {importPreview.errors.map((e, idx) => (
-                            <li key={idx}>Row {e.row}: {e.errors.join(', ')}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    <button
-                      onClick={handleImportSubmit}
-                      disabled={submitting || importPreview.preview?.length === 0}
-                      style={{ marginTop: '16px' }}
-                    >
-                      {submitting ? 'Starting...' : `Import ${importPreview.preview?.length || 0} Users`}
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-
-            {importJobId && (
-              <div>
-                <h4>Import Progress</h4>
-                <div style={{ width: '100%', height: '20px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${importProgress}%`, height: '100%', background: '#4caf50', transition: 'width 0.3s' }}></div>
-                </div>
-                <p>{importProgress}% Completed</p>
-                {importProgress === 100 && (
-                  <div style={{ marginTop: '16px' }}>
-                    <p style={{ color: 'green' }}>Import Finished!</p>
-                    {importErrors.length > 0 && (
-                      <div style={{ color: 'red', marginTop: '8px' }}>
-                        <h5>Errors during import:</h5>
-                        <ul>
-                          {importErrors.map((err, idx) => (
-                            <li key={idx}>{err.message}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+      {timelineUser && (
+        <UserTimelineModal user={timelineUser} onClose={() => setTimelineUser(null)} />
       )}
     </div>
   );
