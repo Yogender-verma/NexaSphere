@@ -421,21 +421,24 @@ async function login(req, res) {
         username: u,
         role,
         scopes,
-        secret,
-        backupCodes,
-        ip,
-        userAgent,
-        suspicious,
-      });
+      },
+    });
 
-      return res.status(202).json({
-        requiresTwoFactorSetup: true,
-        setupToken,
-        qrCodeDataUrl,
-        otpAuthUrl,
-        secret,
-        backupCodes,
-        graceEndsAt: securityAccount?.grace_ends_at,
+    // Write session to shared Redis for cross-service validation
+    try {
+      const tokenHash = hashToken(session.token);
+      const redisKey = REDIS_SESSION_PREFIX + tokenHash;
+      const redisPayload = JSON.stringify({
+        token: tokenHash,
+        email: u,
+        createdAt: new Date().toISOString(),
+        expiresAt: session.expiresAt,
+        metadata: {
+          userAgent: req.get('user-agent') || '',
+          ip,
+          role,
+          scopes,
+        },
       });
     }
 
