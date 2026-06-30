@@ -4,6 +4,12 @@ import apiClient from '../../utils/apiClient';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { useStudentAuth } from '../../context/StudentAuthContext';
 import { NotificationSkeleton } from '../../components/ui/skeleton/NotificationSkeleton';
+import {
+  initializeSocket,
+  joinRoom,
+  on as socketOn,
+  off as socketOff,
+} from '../../utils/socketClient';
 
 const TYPE_ICONS = {
   message: '💬',
@@ -20,7 +26,8 @@ export default function NotificationHistoryPage({ userId }) {
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('all'); // all | unread | mentions | priority
+  const [q, setQ] = useState('');
   const navigate = useNavigate();
   const limit = 50;
 
@@ -30,15 +37,18 @@ export default function NotificationHistoryPage({ userId }) {
       setLoading(true);
       try {
         const currentOffset = reset ? 0 : offset;
-        const data = await apiClient(
-          `/api/notifications?userId=${effectiveUserId}&offset=${currentOffset}&limit=${limit}`
-        );
+        const params = new URLSearchParams();
+        params.set('userId', effectiveUserId);
+        params.set('offset', String(currentOffset));
+        params.set('limit', String(limit));
+
+        if (filter && filter !== 'all') params.set('tab', filter);
+        if (q && q.trim()) params.set('q', q.trim());
+
+        const data = await apiClient(`/api/notifications?${params.toString()}`);
         const list = data.notifications || [];
-        if (reset) {
-          setNotifications(list);
-        } else {
-          setNotifications((prev) => [...prev, ...list]);
-        }
+
+        setNotifications(list);
         setHasMore(list.length >= limit);
         if (!reset) setOffset((prev) => prev + list.length);
       } catch {
@@ -46,13 +56,39 @@ export default function NotificationHistoryPage({ userId }) {
       }
       setLoading(false);
     },
-    [effectiveUserId, offset]
+    [effectiveUserId, offset, filter, q]
   );
 
   useEffect(() => {
     setOffset(0);
     fetchNotifications(true);
-  }, [effectiveUserId]);
+  }, [effectiveUserId, fetchNotifications]);
+
+  // Real-time updates via WebSocket
+  useEffect(() => {
+    const socket = initializeSocket();
+    if (!socket) return;
+
+    joinRoom('notifications-room');
+
+    const handler = (payload) => {
+      try {
+        if (!payload) return;
+        if (payload.userId && effectiveUserId && payload.userId !== effectiveUserId) return;
+        fetchNotifications(true);
+      } catch {
+        // ignore
+      }
+    };
+
+    socketOn('notifications:new', handler);
+    socketOn('notifications:updated', handler);
+
+    return () => {
+      socketOff('notifications:new', handler);
+      socketOff('notifications:updated', handler);
+    };
+  }, [effectiveUserId, fetchNotifications]);
 
   const markRead = useCallback(
     async (id) => {
@@ -93,7 +129,122 @@ export default function NotificationHistoryPage({ userId }) {
     }
   }, [effectiveUserId]);
 
-  const filteredList = filter === 'all' ? notifications : notifications.filter((n) => !n.isRead);
+  const filteredList = (() => {
+    if (filter === 'unread') return notifications.filter((n) => !n.isRead);
+    if (filter === 'mentions') {
+      // Best-effort: mentions are usually represented with type='mention' and/or title/message containing '@'
+      return notifications.filter(
+        (n) => n.type === 'mention' || /@/g.test(n.title || '') || /@/g.test(n.message || '')
+      );
+    }
+    return notifications;
+  })();
+
+  const renderItem = (n) => (
+    <div
+      key={n.id}
+      onClick={() => {
+        if (!n.isRead) markRead(n.id);
+        if (n.link) navigate(n.link);
+      }}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '1rem',
+        padding: '1rem 1.25rem',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        background: n.isRead ? 'transparent' : 'rgba(204,17,17,0.06)',
+        border: '1px solid',
+        borderColor: n.isRead ? 'var(--border)' : 'rgba(204,17,17,0.15)',
+        transition: 'background 0.15s',
+      }}
+    >
+      <span style={{ fontSize: '1.3rem' }}>{TYPE_ICONS[n.type] || '🔔'}</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: n.isRead ? 400 : 600, color: 'var(--t1)' }}>{n.title}</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--t2)', marginTop: '2px' }}>{n.message}</div>
+        <div
+          style={{
+            fontSize: '0.75rem',
+            color: 'var(--t2)',
+            marginTop: '4px',
+            opacity: 0.6,
+          }}
+        >
+          {formatRelativeTime(n.createdAt)}
+        </div>
+      </div>
+      {!n.isRead && (
+        <span
+          style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: 'var(--c1)',
+            flexShrink: 0,
+            marginTop: '6px',
+          }}
+        />
+      )}
+    </div>
+  );
+
+  const ExpandableGroup = ({ group }) => {
+    const [open, setOpen] = useState(false);
+    const groupTitle = group.title || 'Notifications';
+
+    // If server sent notifications array, show unread indicator
+    const unreadCount = Array.isArray(group.notifications)
+      ? group.notifications.filter((n) => !n.isRead).length
+      : 0;
+
+    return (
+      <div style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            width: '100%',
+            textAlign: 'left',
+            padding: '0.9rem 1rem',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--t1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontWeight: 700 }}>
+              {groupTitle}{' '}
+              <span style={{ fontWeight: 600, color: 'var(--t2)' }}>
+                ({group.summaryCount ?? group.notifications?.length ?? 0})
+              </span>
+            </div>
+            {unreadCount > 0 && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--c1, #cc1111)' }}>
+                {unreadCount} unread
+              </div>
+            )}
+          </div>
+          <div style={{ color: 'var(--t2)' }}>{open ? '▾' : '▸'}</div>
+        </button>
+
+        {open && Array.isArray(group.notifications) && (
+          <div style={{ padding: '0.5rem 0.5rem 0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {group.notifications.map((n) => (
+                <div key={n.id}>{renderItem(n)}</div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '2rem 1rem' }}>
@@ -103,24 +254,36 @@ export default function NotificationHistoryPage({ userId }) {
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '1.5rem',
+          gap: '1rem',
+          flexWrap: 'wrap',
         }}
       >
         <h1 style={{ margin: 0, color: 'var(--t1)', fontSize: '1.5rem' }}>Notifications</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            onClick={() => setFilter(filter === 'all' ? 'unread' : 'all')}
-            style={{
-              padding: '0.4rem 1rem',
-              borderRadius: '6px',
-              border: '1px solid var(--border)',
-              background: 'transparent',
-              color: 'var(--t1)',
-              cursor: 'pointer',
-              fontSize: '0.8rem',
-            }}
-          >
-            {filter === 'all' ? 'All' : 'Unread'}
-          </button>
+
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {[
+            { key: 'all', label: 'All' },
+            { key: 'unread', label: 'Unread' },
+            { key: 'mentions', label: 'Mentions' },
+            { key: 'priority', label: 'Priority' },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setFilter(t.key)}
+              style={{
+                padding: '0.4rem 1rem',
+                borderRadius: '6px',
+                border: '1px solid var(--border)',
+                background: filter === t.key ? 'rgba(204,17,17,0.10)' : 'transparent',
+                color: 'var(--t1)',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+
           <button
             onClick={markAllRead}
             style={{
@@ -152,6 +315,27 @@ export default function NotificationHistoryPage({ userId }) {
         </div>
       </div>
 
+      <div style={{ marginBottom: '1rem' }}>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search notifications..."
+          style={{
+            width: '100%',
+            maxWidth: '720px',
+            padding: '0.75rem 0.9rem',
+            borderRadius: '10px',
+            border: '1px solid var(--border)',
+            background: 'transparent',
+            color: 'var(--t1)',
+            outline: 'none',
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') fetchNotifications(true);
+          }}
+        />
+      </div>
+
       {filteredList.length === 0 && !loading && (
         <div style={{ textAlign: 'center', padding: '4rem 0', color: 'var(--t2)' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔔</div>
@@ -164,55 +348,11 @@ export default function NotificationHistoryPage({ userId }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {filteredList.map((n) => (
-            <div
-              key={n.id}
-              onClick={() => {
-                if (!n.isRead) markRead(n.id);
-                if (n.link) navigate(n.link);
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '1rem',
-                padding: '1rem 1.25rem',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                background: n.isRead ? 'transparent' : 'rgba(204,17,17,0.06)',
-                border: '1px solid',
-                borderColor: n.isRead ? 'var(--border)' : 'rgba(204,17,17,0.15)',
-                transition: 'background 0.15s',
-              }}
-            >
-              <span style={{ fontSize: '1.3rem' }}>{TYPE_ICONS[n.type] || '🔔'}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: n.isRead ? 400 : 600, color: 'var(--t1)' }}>
-                  {n.title}
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--t2)', marginTop: '2px' }}>
-                  {n.message}
-                </div>
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--t2)',
-                    marginTop: '4px',
-                    opacity: 0.6,
-                  }}
-                >
-                  {formatRelativeTime(n.createdAt)}
-                </div>
-              </div>
-              {!n.isRead && (
-                <span
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    background: 'var(--c1)',
-                    flexShrink: 0,
-                    marginTop: '6px',
-                  }}
-                />
+            <div key={n.id || n.groupKey || n.groupType}>
+              {n.notifications && Array.isArray(n.notifications) ? (
+                <ExpandableGroup group={n} />
+              ) : (
+                renderItem(n)
               )}
             </div>
           ))}

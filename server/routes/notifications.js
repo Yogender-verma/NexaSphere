@@ -303,6 +303,8 @@ router.post(
 router.get('/notifications', async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
+    const tab = req.query.tab || 'all';
+    const q = req.query.q || null;
 
     if (userId !== 'global') {
       let authenticated = false;
@@ -348,14 +350,14 @@ router.get('/notifications', async (req, res) => {
 
     const offset = parseInt(req.query.offset, 10) || 0;
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
-    const list = await notificationsService.getNotifications(userId, offset, limit);
+    const list = await notificationsService.getNotifications({ userId, offset, limit, tab, q });
     return res.json({ notifications: list });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 });
 
-router.get('/notifications/preferences', requireNotificationAuth, async (req, res) => {
+router.get('/notifications/preferences', requireNotificationPrefAuth, async (req, res) => {
   try {
     const userId = req.query.userId || 'global';
     const prefs = await notificationPreferencesRepository.list(userId);
@@ -365,7 +367,7 @@ router.get('/notifications/preferences', requireNotificationAuth, async (req, re
   }
 });
 
-router.put('/notifications/preferences', requireNotificationAuth, async (req, res) => {
+router.put('/notifications/preferences', requireNotificationPrefAuth, async (req, res) => {
   try {
     const userId = req.body.userId || 'global';
     const { category, email, push, in_app, sms, frequency, quiet_start, quiet_end, dnd } = req.body;
@@ -386,7 +388,7 @@ router.put('/notifications/preferences', requireNotificationAuth, async (req, re
   }
 });
 
-router.put('/notifications/preferences/bulk', requireNotificationAuth, async (req, res) => {
+router.put('/notifications/preferences/bulk', requireNotificationPrefAuth, async (req, res) => {
   try {
     const userId = req.body.userId || 'global';
     const { preferences } = req.body;
