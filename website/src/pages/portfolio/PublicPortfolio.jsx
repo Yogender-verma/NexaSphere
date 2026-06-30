@@ -29,6 +29,13 @@ export default function PublicPortfolio({ username, onBack }) {
           setPortfolio(data);
           setIsLoading(false);
         }
+        // Fire-and-forget view tracking — never blocks rendering or
+        // surfaces an error to the visitor if it fails.
+        fetch(`${base}/api/portfolio/${username}/view`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referrer: document.referrer || null }),
+        }).catch(() => {});
       } catch (err) {
         if (alive) {
           setError(err.message);

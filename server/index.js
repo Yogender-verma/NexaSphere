@@ -31,6 +31,7 @@ import portfolioExportRouter from './routes/portfolioExport.js';
 import userGroupsRouter from './routes/userGroups.js';
 import notificationsRouter from './routes/notifications.js';
 import adminRouter from './routes/admin.js';
+import portfolioAnalyticsRouter from './routes/portfolioAnalytics.js';
 import announcementsRouter from './routes/announcements.js';
 import bulkRouter from './routes/bulk.js';
 import { validateEnvironment } from './utils/envValidator.js';
@@ -406,6 +407,7 @@ app.use('/', apiRouter);
 app.use('/', healthRouter);
 app.use('/', coreTeamRouter);
 app.use('/api', formsRouter);
+app.use('/api', portfolioAnalyticsRouter);
 app.use('/api', portfolioRouter);
 app.use('/api', recoveryRouter);
 app.use('/', notificationsRouter);
@@ -1783,7 +1785,6 @@ if (process.env.NODE_ENV !== 'test') {
       server = app.listen(port, () => {
         console.log(`NexaSphere server listening on http://localhost:${port}`);
         schedulerService.init();
-        initScheduler(); // ← add this line
 
         // Register Learning Path Nudges (Runs daily)
         schedulerService.schedule('0 10 * * *', async () => {
